@@ -1,0 +1,203 @@
+/*
+ * Napster Omniagent — default panel UI.
+ *
+ * Framework-agnostic styles for the default Omniagent panel. Pair with the
+ * structure in omniagent-panel-reference.html (or the equivalent your deploy
+ * skill generated for your framework). Visual language follows the Napster
+ * Design System: pure black canvas, Napster Pink (#DD52CB) on the load-bearing
+ * accent, Inter for headings, IBM Plex Mono for metadata, every corner rounded.
+ *
+ * The avatar mounts inside .omniagent-mount; pass that element (or its id,
+ * #omniagent-mount) as `mountContainer` to the Web SDK init() call.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
+
+/* ---------- Reset inside the panel only --------------------------------- */
+.omniagent-panel,
+.omniagent-panel * {
+  box-sizing: border-box;
+}
+
+/* ---------- Panel ------------------------------------------------------- */
+.omniagent-panel {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  width: 380px;
+  height: 520px;
+  display: flex;
+  flex-direction: column;
+
+  background: rgba(0, 0, 0, 0.88);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+          backdrop-filter: blur(20px) saturate(140%);
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(221, 82, 203, 0.06),
+    0 0 32px rgba(221, 82, 203, 0.08);
+
+  overflow: hidden;
+
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #fff;
+
+  animation: omniagent-panel-in 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Drop the fixed positioning to flow inline in a page layout. */
+.omniagent-panel.is-inline {
+  position: relative;
+  right: auto;
+  bottom: auto;
+}
+
+@keyframes omniagent-panel-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ---------- Header ------------------------------------------------------ */
+.omniagent-header {
+  flex-shrink: 0;
+  height: 56px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  background: linear-gradient(180deg, rgba(221, 82, 203, 0.10), rgba(221, 82, 203, 0));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.omniagent-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+
+.omniagent-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.omniagent-status::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #DD52CB;
+  box-shadow: 0 0 8px rgba(221, 82, 203, 0.6);
+  animation: omniagent-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes omniagent-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ---------- Avatar mount ------------------------------------------------ */
+.omniagent-mount {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+.omniagent-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition: opacity 240ms ease;
+}
+
+.omniagent-loading.is-hidden {
+  opacity: 0;
+}
+
+/* ---------- Powered-by footer ------------------------------------------ */
+.omniagent-footer {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.4);
+
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 160ms ease;
+}
+
+.omniagent-footer:hover {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.omniagent-footer__mark {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: #DD52CB;
+}
+
+.omniagent-footer__brand {
+  color: #DD52CB;
+  letter-spacing: 0.12em;
+  font-weight: 500;
+}
+
+/* ---------- Compact variant for tight viewports ------------------------ */
+@media (max-width: 480px) {
+  .omniagent-panel {
+    right: 12px;
+    bottom: 12px;
+    width: calc(100vw - 24px);
+    height: 60vh;
+    border-radius: 16px;
+  }
+}
+
+/* ---------- Reduced motion --------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .omniagent-panel,
+  .omniagent-status::before {
+    animation: none;
+  }
+}

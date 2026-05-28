@@ -1,0 +1,3 @@
+# --- Napster Omniagent local token server ---
+# Never commit your API key. Keep the env file local.
+local-token-server/.env

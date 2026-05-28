@@ -1,0 +1,16 @@
+# OS / editor noise
+.DS_Store
+*.swp
+*~
+
+# IDE / harness local state
+.claude/settings.local.json
+.idea/
+.vscode/settings.json
+
+# Local secrets — never commit the token server's env
+assets/local-token-server/.env
+
+# Node, in case someone runs anything inside the token server folder
+node_modules/
+npm-debug.log*

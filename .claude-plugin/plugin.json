@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "napster-omniagent-api",
+  "displayName": "Napster Omniagent API",
+  "version": "0.1.0",
+  "description": "Build with the Napster Omniagent API. Skills cover personas, agents, tools, knowledge, and every deployment channel (web, audio, phone). Includes a guided quickstart wizard, a framework-agnostic default panel (CSS + structural reference, adapted by the skill to any framework), an optional local token server for prototyping, and a polished troubleshooting index.",
+  "author": {
+    "url": "https://developers.napster.com"
+  },
+  "homepage": "https://developers.napster.com",
+  "repository": "https://github.com/napster/omniagent-api-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "napster",
+    "omniagent",
+    "omniagent-api",
+    "voice-agent",
+    "video-agent",
+    "realtime",
+    "webrtc",
+    "telephony",
+    "multi-channel",
+    "companion-api"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "napster-omniagent-local-token-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local prototyping token server for the Napster Omniagent API. Not for production.",
+  "type": "module",
+  "scripts": {
+    "start": "node token-server.js"
+  }
+}
