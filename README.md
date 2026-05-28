@@ -1,11 +1,13 @@
 # Napster Omniagent API — Skills
 
-The official Claude Code plugin for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a guided quickstart wizard, a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
+The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
+
+**Where it runs:** the 12 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
 
 ## After install, start here
 
-- **New to the API?** Run the wizard: `/napster-omniagent-api:omniagent-quickstart`. It walks you from API key to a deployed Omniagent on the channel(s) you pick.
-- **Already know what you want?** Just say it in plain language — "create a persona", "embed the agent in my React app", "set up phone calls", "my mic isn't working" — and the matching skill fires automatically.
+- **In Claude Code, new to the API?** Run the wizard: `/napster-omniagent-api:omniagent-quickstart`. It walks you from API key to a deployed Omniagent on the channel(s) you pick. (Slash commands are a Claude Code feature — see the natural-language path below in other tools.)
+- **In any tool, already know what you want?** Just say it in plain language — "create a persona", "embed the agent in my React app", "set up phone calls", "my mic isn't working" — and the matching skill fires automatically.
 
 ## Prerequisites
 
@@ -15,27 +17,40 @@ The official Claude Code plugin for the [Napster Omniagent API](https://develope
 
 ## Install
 
-Three paths, pick one:
+Pick by **the tool you're using**, not by command. There are a lot of surfaces and it's easy to get lost; what matters is which tool runs your coding agent.
 
-**Open Agent Skills CLI** (works in Claude Code, Cursor, Codex, OpenCode, and other tools that follow the [Agent Skills spec](https://agentskills.io/specification)):
+### Using Claude Code
 
-```bash
-npx skills add napster/omniagent-api-skills
-```
-
-**Claude Code marketplace:**
+Claude Code ships in several form factors — the **terminal CLI**, the **Claude desktop app** (Mac/Windows), the **VS Code** and **JetBrains** extensions, and the **claude.ai/code** web app. The install steps are the **same in all of them**, because plugins are a Claude Code feature regardless of where you run it. In any of those surfaces, run:
 
 ```
 /plugin marketplace add napster/omniagent-api-skills
 /plugin install napster-omniagent-api
 ```
 
-**Manual (local clone):**
+After install, you'll have the guided wizard `/omniagent-quickstart` and all 12 skills will auto-trigger on natural language.
+
+### Using Cursor, Codex, OpenCode, or another Agent Skills–compatible tool
+
+These tools follow the open [Agent Skills spec](https://agentskills.io/specification). In your project root, run:
+
+```bash
+npx skills add napster/omniagent-api-skills
+```
+
+The skills will be dropped into your project and the bundled docs MCP server is auto-configured. The 12 skills work identically to how they do in Claude Code. The `/omniagent-quickstart` **slash command does not work here** — slash commands are a Claude Code feature. Use the natural-language path instead (just say "create a persona", "embed the agent in my React app", etc.).
+
+### Manual install (any tool, or if neither command above fits)
 
 ```bash
 git clone https://github.com/napster/omniagent-api-skills
-claude --plugin-dir ./omniagent-api-skills
 ```
+
+Then point your tool at the cloned folder — e.g. for the Claude Code CLI: `claude --plugin-dir ./omniagent-api-skills`. For other tools, check their docs for "load skills from a local folder."
+
+### Not sure which one you have?
+
+If your coding agent supports a **`/plugin`** command — that's Claude Code, use the first path. If you install skills with **`npx skills add`** (Cursor, Codex, OpenCode, the Vercel Labs skills CLI) — use the second. When in doubt, the manual path always works.
 
 ## What's inside
 
@@ -84,23 +99,3 @@ The default panel includes a small `Powered by Napster` footer that links to the
 | **Knowledge base / FAQ** | Documents and curated Q&A the agent grounds answers in | `/public/knowledge-bases`, `/public/faqs` |
 | **Channel** | The surface a session runs on: WebRTC, WebSocket, Phone (VoIP or SIP) | per-session connections + `/channels/{type}` |
 | **Session** | One conversation, with its transcript and config | `/public/sessions` |
-
-> The API resource for a persona is still named `companion`. Customer-facing copy says **persona**; generated code calls the real `/public/companions` endpoint.
-
-## Security posture
-
-- The API key authenticates with the `X-Api-Key` header and is **server-side only**. It must never reach the browser.
-- The browser receives a short-lived connection **token**, minted by a server-side endpoint that holds the key (see [`deploy-webrtc`](skills/deploy-webrtc/SKILL.md) and the optional [local token server](assets/local-token-server/README.md)).
-- Store the key in `NAPSTER_API_KEY`, never hardcoded in committed source. The token server's `.env` must be gitignored.
-
-## Non-negotiable rules
-
-- **Voice IDs** must be a currently supported value — fetch the live list from the docs (`building-your-omniagent/configuration` or `get-overview`); don't hardcode it, the set changes. An unsupported value produces broken or silent audio.
-- **Token issuance is server-side.** The browser never sees the API key.
-- **Persona images** must be a publicly reachable URL when creating a custom persona with `pictureUrl`.
-- **Functions are bound per agent (or per connection).** Creating a function does not auto-attach it — pass its ID in the agent's `functions` array.
-- **Keep prompts and tool sets small.** Every tool and every instruction token competes for the model's attention in a realtime voice session.
-
-## Maintainer and version
-
-Maintained by Napster. Versioned with semver; see [`plugin.json`](.claude-plugin/plugin.json). The [Napster docs MCP server](https://docs.napster.com/_mcp/server) is the source of truth for API details — when a skill and the live docs disagree, the docs win.
