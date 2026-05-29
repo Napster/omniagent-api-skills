@@ -209,8 +209,31 @@ Key points the docs call out:
 
 - **`await` init.** Without it you hold a Promise, not the instance; every method throws.
 - **`mountContainer`** accepts a DOM element or a selector string.
-- The CSS gives `.omniagent-mount` a bounded, `position: relative` box — let the SDK size itself inside it instead of fighting it with `!important`.
 - Pass **`onData`** to receive every server event (see [[session-runtime]] for the event names, the greeting nudge, and the function-call loop).
+- **Fitting the SDK into your own layout.** When the mount container is a `div` with its own visual layout (rounded corners, fixed dimensions, panel chrome) and you want the SDK to fill that space cleanly without overflow or alignment issues, you need two things together:
+
+  1. Pass the **`className`** option to `init()` — it gets attached to the SDK as a stable, public styling hook so you don't have to target anything internal:
+
+     ```js
+     await NapsterCompanionApiSdk.init(token, {
+       mountContainer: mountRef.current,
+       className: "my-omniagent-skin",
+       onData: handleData,
+     });
+     ```
+
+  2. Style that class to fill its parent:
+
+     ```css
+     .my-omniagent-skin {
+       position: absolute !important;
+       inset: 0 !important;
+       width: 100% !important;
+       height: 100% !important;
+     }
+     ```
+
+  Both are required — `className` alone gives you the hook, the CSS rule makes the SDK fill the container properly. Use the same class for any further styling you need on top (borders, rounded corners, custom backgrounds).
 
 ### Inside an iframe
 
