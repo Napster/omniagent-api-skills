@@ -54,7 +54,15 @@ async def token():
     return r.json()  # { token, connection: { id, … } }
 ```
 
-**Path 2 — prototype scaffold.** Copy `${CLAUDE_PLUGIN_ROOT}/assets/local-token-server/` into the project root as `local-token-server/`. Set `NAPSTER_API_KEY` and `AGENT_ID` in `local-token-server/.env`, append `gitignore.template` to `.gitignore`, and run `node local-token-server/token-server.js`. Its `POST /token` proxies the agent connection call above. Then tell the developer: "When you're ready for production, I'll port `/token` into your real backend." See the [server README](../../assets/local-token-server/README.md).
+**Path 2 — prototype scaffold.** Create a `local-token-server/` folder in the project root and fetch each file by raw URL from the public skills repo:
+
+- `token-server.js` — `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/local-token-server/token-server.js`
+- `package.json` — `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/local-token-server/package.json`
+- `.env.example` — `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/local-token-server/.env.example`
+- `gitignore.template` — `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/local-token-server/gitignore.template`
+- `README.md` — `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/local-token-server/README.md`
+
+Copy `.env.example` to `.env` and set `NAPSTER_API_KEY` and `AGENT_ID`. Append `gitignore.template` to the project's `.gitignore`. Run `node local-token-server/token-server.js` — its `POST /token` proxies the agent connection call above. Tell the developer: "When you're ready for production, I'll port `/token` into your real backend."
 
 **Path 3 — skip.** Note the developer is responsible for token issuance and continue; the browser code below still calls `POST /token`.
 
@@ -96,16 +104,21 @@ Before writing SDK code, check the current init signature and option set against
 
 ## 3. Build the panel from the canonical reference
 
-The plugin ships **one** panel structure: `${CLAUDE_PLUGIN_ROOT}/assets/omniagent-panel-reference.html` (header + mount + "Powered by Napster" footer) and **one** stylesheet: `assets/omniagent-ui.css`. Don't inline panel markup from memory — read the reference and adapt it.
+The skills ship **one** canonical panel structure and **one** stylesheet, both hosted in the public skills repo:
+
+- Panel reference (header + mount + "Powered by Napster" footer): `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/omniagent-panel-reference.html`
+- Stylesheet: `https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/omniagent-ui.css`
+
+Don't inline panel markup from memory — fetch both URLs and adapt.
 
 1. Read `package.json` (or equivalent) to detect the framework.
-2. Read `omniagent-panel-reference.html` to learn the structure.
+2. Fetch the panel reference (URL above) to learn the structure.
 3. Reproduce that structure in the framework's idiom:
    - **React / Next / Remix** → a JSX component, mount = a `ref`'d `<div className="omniagent-mount">`.
    - **Vue / Nuxt** → a `<template>` with a `ref`'d mount div.
    - **Svelte** → markup with `bind:this` on the mount div.
    - **Plain HTML** → drop the reference contents straight into `<body>`.
-4. Copy `assets/omniagent-ui.css` into the project unchanged and load it (import in bundlers, `<link>` in plain HTML).
+4. Fetch the stylesheet (URL above) and copy it into the project unchanged, then load it (import in bundlers, `<link>` in plain HTML).
 5. Set the agent's name in the header. Keep the footer (see [[troubleshoot-omniagent]] for the attribution policy) unless the developer explicitly asks to remove it.
 
 ## 4. Wire the SDK to the mount
