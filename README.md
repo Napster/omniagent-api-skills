@@ -77,7 +77,7 @@ omniagent-api-skills/
 └── assets/
     ├── omniagent-ui.css                Canonical panel styles (framework-agnostic)
     ├── omniagent-panel-reference.html  Canonical panel structure (header + mount + footer)
-    ├── napster-mark.svg                Brand mark for the footer
+    │                                   (brand mark is inlined as SVG in the panel HTML)
     └── local-token-server/             Optional prototyping scaffold (not for production)
 ```
 

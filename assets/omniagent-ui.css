@@ -171,16 +171,10 @@
 }
 
 .omniagent-footer__mark {
-  width: 14px;
   height: 14px;
+  width: auto;
   flex-shrink: 0;
-  color: #DD52CB;
-}
-
-.omniagent-footer__brand {
-  color: #DD52CB;
-  letter-spacing: 0.12em;
-  font-weight: 500;
+  display: block;
 }
 
 /* ---------- Compact variant for tight viewports ------------------------ */
