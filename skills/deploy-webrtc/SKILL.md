@@ -155,6 +155,8 @@ export function OmniagentPanel() {
       // 3. Init — AWAIT it.
       instanceRef.current = await NapsterCompanionApiSdk.init(token, {
         mountContainer: mountRef.current,
+        className: "omniagent-sdk-root",     // styling hook — see "Fitting the SDK" below
+        avatarStyle: { view: "rectangle" },  // matches the omniagent-panel-reference layout
         onData: handleData,
       });
     })();
@@ -197,6 +199,8 @@ Plain HTML / standalone global:
     const { token } = await res.json();
     const instance = await window.napsterCompanionApiSDK.init(token, {
       mountContainer: "#omniagent-mount",
+      className: "omniagent-sdk-root",     // styling hook — see "Fitting the SDK" below
+      avatarStyle: { view: "rectangle" },  // matches the omniagent-panel-reference layout
       onData: handleData,
     });
     window.__omniagent = instance; // debugging only — remove in production
@@ -210,30 +214,18 @@ Key points the docs call out:
 - **`await` init.** Without it you hold a Promise, not the instance; every method throws.
 - **`mountContainer`** accepts a DOM element or a selector string.
 - Pass **`onData`** to receive every server event (see [[session-runtime]] for the event names, the greeting nudge, and the function-call loop).
-- **Fitting the SDK into your own layout.** When the mount container is a `div` with its own visual layout (rounded corners, fixed dimensions, panel chrome) and you want the SDK to fill that space cleanly without overflow or alignment issues, you need two things together:
+- **Fitting the SDK into your own layout.** The mount container (`.omniagent-mount`) has its own visual layout — bounded size, rounded corners, panel chrome. To make the SDK fill that space cleanly without overflow or alignment issues, you need **both** of these together (the init samples above already include them):
 
-  1. Pass the **`className`** option to `init()` — it gets attached to the SDK as a stable, public styling hook so you don't have to target anything internal:
+  ```js
+  await NapsterCompanionApiSdk.init(token, {
+    mountContainer: mountRef.current,
+    className: "omniagent-sdk-root",     // styling hook attached to the SDK
+    avatarStyle: { view: "rectangle" },  // matches the panel layout
+    onData: handleData,
+  });
+  ```
 
-     ```js
-     await NapsterCompanionApiSdk.init(token, {
-       mountContainer: mountRef.current,
-       className: "my-omniagent-skin",
-       onData: handleData,
-     });
-     ```
-
-  2. Style that class to fill its parent:
-
-     ```css
-     .my-omniagent-skin {
-       position: absolute !important;
-       inset: 0 !important;
-       width: 100% !important;
-       height: 100% !important;
-     }
-     ```
-
-  Both are required — `className` alone gives you the hook, the CSS rule makes the SDK fill the container properly. Use the same class for any further styling you need on top (borders, rounded corners, custom backgrounds).
+  The fill rule for `.omniagent-sdk-root` is already baked into `omniagent-ui.css` — you don't need to write your own CSS. Just pass the two init options above and it Just Works. If you want to add your own styling on top (custom borders, backgrounds, rounded corners), you can scope to the same `.omniagent-sdk-root` class.
 
 ### Inside an iframe
 
@@ -245,7 +237,9 @@ The iframe must grant the permissions the SDK uses, or the mic preflight fails e
 
 ## 5. (Optional) Green-screen background for compositing
 
-If you want to composite the agent's avatar over your own UI (no backdrop, the person floating on the page), you have to set this in **two places** — server-side and SDK-side — and they have to match.
+Skip this unless you need to composite the agent over your own UI (no backdrop, the person "floating" on the page). The default `avatarStyle.view: "rectangle"` already works for the standard embedded panel above; only switch to silhouette if you need to chroma-key the avatar yourself.
+
+If you do, set it in **two places** — server-side and SDK-side — and they have to match.
 
 **Server side — WebRTC channel config.** Tell the server to emit a chroma-keyed (green) stream:
 
@@ -256,12 +250,13 @@ curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channel
   -d '{ "useGreenVideo": true }'
 ```
 
-**SDK side — `avatarStyle.view: 'silhouette'`.** Tell the Web SDK to consume that stream by keying out the green and rendering only the person:
+**SDK side — change `avatarStyle.view` from the default `"rectangle"` to `"silhouette"`.** Tell the Web SDK to consume the green stream by keying it out and rendering only the person:
 
 ```js
 await NapsterCompanionApiSdk.init(token, {
   mountContainer: mountRef.current,
-  avatarStyle: { view: "silhouette" },
+  className: "omniagent-sdk-root",
+  avatarStyle: { view: "silhouette" },  // overrides the default "rectangle"
   onData: handleData,
 });
 ```

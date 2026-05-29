@@ -154,30 +154,29 @@ import "@touchcastllc/napster-companion-api/lib/index.css";
 
 In plain HTML, copy `lib/index.standalone.js` and `lib/index.css` from `node_modules` into a served folder and use `window.napsterCompanionApiSDK`.
 
-Mount it: **`await NapsterCompanionApiSdk.init(token, { mountContainer, onData })`** — the await is required, otherwise `instance.sendCommand` is undefined. Wire `onData` for session events. The agent does not auto-greet — to force a greeting on ready, send a `send_message` with `role: "system"`, `trigger_response: true`.
+Mount it with these init options — both `className` and `avatarStyle.view` are required to make the SDK fit the panel layout correctly:
 
-When the mount container is a `div` with its own visual layout (rounded corners, fixed dimensions, panel chrome) and you want the SDK to fill that space cleanly without overflow or alignment issues, do both of these together:
+```js
+const instance = await NapsterCompanionApiSdk.init(token, {
+  mountContainer: /* DOM element or selector */,
+  className: "omniagent-sdk-root",     // styling hook — the panel CSS already handles the fill rule
+  avatarStyle: { view: "rectangle" },  // matches the canonical panel layout
+  onData: handleData,
+});
+```
 
-1. Pass a `className` option to `init()` — e.g. `className: "my-omniagent-skin"`. This attaches a stable, public styling hook to the SDK so you don't have to target anything internal.
-2. Style that class to fill its parent:
+The await is required, otherwise `instance.sendCommand` is undefined. Wire `onData` for session events. The agent does not auto-greet — to force a greeting on ready, send a `send_message` with `role: "system"`, `trigger_response: true`.
 
-   ```css
-   .my-omniagent-skin {
-     position: absolute !important;
-     inset: 0 !important;
-     width: 100% !important;
-     height: 100% !important;
-   }
-   ```
-
-Both are required — `className` alone gives you the hook, the CSS rule makes the SDK fill the container. Use the same class for any further styling on top (borders, rounded corners, custom backgrounds).
+About the two options:
+- **`className: "omniagent-sdk-root"`** — the canonical CSS (linked below) already includes a `.omniagent-sdk-root` rule that fills the mount container with `position: absolute !important; inset: 0 !important; width/height: 100% !important;`. Passing this className via init is how the SDK gets that class attached to its root — without it, the avatar can overflow or misalign inside the panel.
+- **`avatarStyle: { view: "rectangle" }`** — this is what the canonical panel is designed for. Only switch to `"silhouette"` if you're doing green-screen compositing (see further down).
 
 For the panel UI, fetch these two files and adapt the structure to my detected framework (React / Vue / Svelte / plain HTML) — don't inline panel markup from memory. Detect the framework from `package.json`. Keep the "Powered by Napster" footer unless I explicitly ask to remove it.
 
 - Panel reference (HTML structure): https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/omniagent-panel-reference.html
-- Stylesheet (CSS): https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/omniagent-ui.css
+- Stylesheet (CSS, includes `.omniagent-sdk-root`): https://raw.githubusercontent.com/Napster/omniagent-api-skills/main/assets/omniagent-ui.css
 
-For a green-screen background (composite the avatar over my UI), set BOTH: `useGreenVideo: true` on the webrtc channel config (`PUT .../channels/webrtc`) AND `avatarStyle.view: "silhouette"` in the SDK init. They must match.
+For a green-screen background (composite the avatar over my UI without a backdrop), set BOTH: `useGreenVideo: true` on the webrtc channel config (`PUT .../channels/webrtc`) AND change `avatarStyle.view` from the default `"rectangle"` to `"silhouette"` in the SDK init. They must match. Skip this for the standard embedded panel — that's what `rectangle` is for.
 
 **Audio-only (WebSocket).** `POST /public/agents/{agentId}/connections` with `{ "channelType": "websocket" }`. The returned token is base64-encoded JSON — decode it to get `{ url, authToken }`. Server-side clients pass `Authorization: Bearer <authToken>` as a header; browsers can't set custom WebSocket headers, so pass `?token=<authToken>` as a query param instead. Audio is **PCM16, 16 kHz, mono, base64** in both directions. Send: `{ "type": "send_audio", "data": { "audio": <base64Pcm16> } }`. Receive `audio_received` events. For barge-in, clear queued playback when you see `speech_started`, keep the mic open, and enable `echoCancellation` in browser `getUserMedia` to prevent feedback loops.
 

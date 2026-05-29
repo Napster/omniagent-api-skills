@@ -129,7 +129,6 @@
   justify-content: center;
   background: rgba(0, 0, 0, 0.6);
   color: rgba(255, 255, 255, 0.7);
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-weight: 500;
   font-size: 11px;
   letter-spacing: 0.08em;
@@ -140,6 +139,21 @@
 
 .omniagent-loading.is-hidden {
   opacity: 0;
+}
+
+/* ---------- SDK root fill ---------------------------------------------- */
+/*
+ * Pass `className: "omniagent-sdk-root"` to NapsterCompanionApiSdk.init().
+ * The SDK attaches this class to its own root element; the rule below makes
+ * the SDK fill the .omniagent-mount container cleanly without overflow or
+ * alignment issues. Pair it with `avatarStyle: { view: "rectangle" }` in
+ * init() — that's what this panel layout is designed for.
+ */
+.omniagent-sdk-root {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* ---------- Powered-by footer ------------------------------------------ */
@@ -155,14 +169,11 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: rgba(0, 0, 0, 0.4);
 
-  font-family: 'IBM Plex Mono', ui-monospace, monospace;
   font-weight: 500;
   font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 
   text-decoration: none;
-  color: rgba(255, 255, 255, 0.55);
+  color: rgba(255, 255, 255, 1);
   transition: color 160ms ease;
 }
 
