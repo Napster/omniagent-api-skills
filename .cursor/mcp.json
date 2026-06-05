@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "napster-docs": {
-      "url": "https://docs.napster.com/_mcp/server"
+      "url": "https://developers.napster.com/mcp"
     }
   }
 }
