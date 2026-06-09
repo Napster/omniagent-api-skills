@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "napster-omniagent-api",
+  "description": "Napster Omniagent API skills",
+  "owner": { "name": "Napster" },
+  "plugins": [
+    {
+      "name": "napster-omniagent-api",
+      "source": ".",
+      "description": "Build with the Napster Omniagent API.",
+      "version": "0.1.0"
+    }
+  ]
+}
