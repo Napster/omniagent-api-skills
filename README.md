@@ -21,14 +21,9 @@ Napster provides three layers of support for AI coding agents — an **MCP serve
 
 | Layer | What it is | Best for |
 |---|---|---|
-| [Quick start prompt](#quick-start-prompt) | One prompt you paste into your AI tool to build your first Omniagent end to end | Trying it out fast in any AI coding tool |
 | [MCP server](#mcp-server) | Free docs server for any MCP-compatible tool | Giving your agent live access to the docs |
 | [Agent skills](#agent-skills) | Architectural guidance and best practices | Letting your agent generate Omniagent code that follows best practices |
 | [Claude plugin](#claude-plugin) | All-in-one plugin with quickstart wizard | The fullest experience in Claude Code or Claude chat |
-
-### Quick start prompt
-
-Copy [`omniagent-quickstart-prompt.md`](omniagent-quickstart-prompt.md) and paste it into your AI coding tool. It walks you through building and deploying your first Omniagent end to end — API key setup, persona creation, agent configuration, tools, knowledge, and channel deployment. Works in any tool whether or not you've installed anything else from this repo.
 
 ### MCP server
 
