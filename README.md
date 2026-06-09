@@ -17,40 +17,82 @@ The official Claude Code plugin **and** Agent Skills package for the [Napster Om
 
 ## Install
 
-Pick by **the tool you're using**, not by command. There are a lot of surfaces and it's easy to get lost; what matters is which tool runs your coding agent.
+Three ways to get this into your coding tool, ordered roughly by how much you get. Pick one — they don't compete with each other, you can mix and match.
 
-### Using Claude Code
+### Option 1 — Just the docs MCP server
 
-Claude Code ships in several form factors — the **terminal CLI**, the **Claude desktop app** (Mac/Windows), the **VS Code** and **JetBrains** extensions, and the **claude.ai/code** web app. The install steps are the **same in all of them**, because plugins are a Claude Code feature regardless of where you run it. In any of those surfaces, run:
+Smallest install. Adds the Napster developer docs as a queryable MCP server in your tool so your coding agent has live access to the API reference, guides, and examples without leaving your editor.
+
+In Claude Code:
 
 ```
-/plugin marketplace add napster/omniagent-api-skills
-/plugin install napster-omniagent-api@napster
+claude mcp add napster-docs --transport http https://developers.napster.com/mcp
 ```
 
-After install, you'll have the guided wizard `/omniagent-quickstart` and all 12 skills will auto-trigger on natural language.
+For Cursor, VS Code / Copilot, Codex, or other MCP-capable tools, see the per-tool setup instructions at [developers.napster.com/ai-coding-tools](https://developers.napster.com/ai-coding-tools).
 
-### Using Cursor, Codex, OpenCode, or another Agent Skills–compatible tool
+### Option 2 — The agent skills (cross-tool Agent Skills package)
 
-These tools follow the open [Agent Skills spec](https://agentskills.io/specification). In your project root, run:
+Adds the 12 skills so your coding agent has architectural guidance and best practices for the Omniagent API. Works in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others.
+
+In your project root:
 
 ```bash
 npx skills add napster/omniagent-api-skills
 ```
 
-The skills will be dropped into your project and the bundled docs MCP server is auto-configured. The 12 skills work identically to how they do in Claude Code. The `/omniagent-quickstart` **slash command does not work here** — slash commands are a Claude Code feature. Use the natural-language path instead (just say "create a persona", "embed the agent in my React app", etc.).
+The skills auto-trigger on natural language ("create a persona", "embed the agent in my React app", etc.). The `/omniagent-quickstart` slash command is Claude-Code-only — use the natural-language path in the other tools.
 
-### Manual install (any tool, or if neither command above fits)
+### Option 3 — The full Claude plugin (skills + MCP + quickstart wizard)
 
-```bash
-git clone https://github.com/napster/omniagent-api-skills
+Bundles the docs MCP server, all 12 skills, and the interactive `/omniagent-quickstart` wizard into a single plugin. Setup depends on which Claude environment you use.
+
+#### Claude Code (CLI and IDE extensions)
+
+Recommended. The CLI always pulls the latest skills and MCP server.
+
+Step 1 — add the Napster marketplace:
+
+```
+/plugin marketplace add napster/omniagent-api-skills
 ```
 
-Then point your tool at the cloned folder — e.g. for the Claude Code CLI: `claude --plugin-dir ./omniagent-api-skills`. For other tools, check their docs for "load skills from a local folder."
+Step 2 — install the plugin:
 
-### Not sure which one you have?
+```
+/plugin install napster-omniagent-api@napster
+```
 
-If your coding agent supports a **`/plugin`** command — that's Claude Code, use the first path. If you install skills with **`npx skills add`** (Cursor, Codex, OpenCode, the Vercel Labs skills CLI) — use the second. When in doubt, the manual path always works.
+To pull the latest version later, refresh the marketplace:
+
+```
+/plugin marketplace update napster
+```
+
+Third-party marketplaces don't auto-update by default in Claude Code, so this manual refresh is how you'll get new skills, MCP changes, or bug fixes. (You can enable auto-update per marketplace via `/plugin → Marketplaces → Enable auto-update` if you prefer that workflow.)
+
+After install you'll have `/omniagent-quickstart` and all 12 skills auto-triggering on natural language.
+
+#### Claude (browser or desktop chat product)
+
+The chat product (claude.ai or the Claude Mac/Windows desktop app) uses a different install path — download the repo as a ZIP and upload it through the Customize UI:
+
+1. Go to [github.com/Napster/omniagent-api-skills](https://github.com/Napster/omniagent-api-skills), click the green **Code** button, and select **Download ZIP**.
+2. In claude.ai (browser) or the Claude desktop app, open the left sidebar and click **Customize**.
+3. Click **+ → Create plugin → Upload plugin** and select the ZIP.
+4. Click the new plugin in the sidebar to activate the skills, then open the **Connectors** tab and install the **Napster Docs** MCP server.
+
+ZIP installs **don't auto-update**. When we publish new skills you'll need to re-download and re-upload. If you want updates handled for you, use the Claude Code CLI path above.
+
+For step-by-step screenshots and per-tool setup details, see [developers.napster.com/ai-coding-tools](https://developers.napster.com/ai-coding-tools).
+
+### Manual install (any tool, or if none of the above fits)
+
+```bash
+git clone https://github.com/Napster/omniagent-api-skills
+```
+
+Then point your tool at the cloned folder — for example, with the Claude Code CLI: `claude --plugin-dir ./omniagent-api-skills`. For other tools, check their docs for "load skills from a local folder."
 
 ## What's inside
 
