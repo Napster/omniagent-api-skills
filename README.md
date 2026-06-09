@@ -25,7 +25,7 @@ Claude Code ships in several form factors — the **terminal CLI**, the **Claude
 
 ```
 /plugin marketplace add napster/omniagent-api-skills
-/plugin install napster-omniagent-api
+/plugin install napster-omniagent-api@napster
 ```
 
 After install, you'll have the guided wizard `/omniagent-quickstart` and all 12 skills will auto-trigger on natural language.
