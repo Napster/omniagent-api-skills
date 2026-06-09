@@ -15,37 +15,94 @@ The official Claude Code plugin **and** Agent Skills package for the [Napster Om
 - Node 18+ (the optional local token server uses native `fetch` and has zero dependencies).
 - A project to build into. The skills detect your framework or fall back to plain HTML.
 
-## Install
+## AI coding agent support
 
-Three ways to get this into your coding tool, ordered roughly by how much you get. Pick one — they don't compete with each other, you can mix and match.
+Napster provides three layers of support for AI coding agents — an **MCP server** for documentation access, **agent skills** for architectural guidance, and a **Claude plugin** that bundles everything together. Use one or all three depending on your tool.
 
-### Option 1 — Just the docs MCP server
+| Layer | What it is | Best for |
+|---|---|---|
+| [Quick start prompt](#quick-start-prompt) | One prompt you paste into your AI tool to build your first Omniagent end to end | Trying it out fast in any AI coding tool |
+| [MCP server](#mcp-server) | Free docs server for any MCP-compatible tool | Giving your agent live access to the docs |
+| [Agent skills](#agent-skills) | Architectural guidance and best practices | Letting your agent generate Omniagent code that follows best practices |
+| [Claude plugin](#claude-plugin) | All-in-one plugin with quickstart wizard | The fullest experience in Claude Code or Claude chat |
 
-Smallest install. Adds the Napster developer docs as a queryable MCP server in your tool so your coding agent has live access to the API reference, guides, and examples without leaving your editor.
+### Quick start prompt
 
-In Claude Code:
+Copy [`omniagent-quickstart-prompt.md`](omniagent-quickstart-prompt.md) and paste it into your AI coding tool. It walks you through building and deploying your first Omniagent end to end — API key setup, persona creation, agent configuration, tools, knowledge, and channel deployment. Works in any tool whether or not you've installed anything else from this repo.
+
+### MCP server
+
+For coding agents that support the Model Context Protocol, Napster provides a free MCP server with tools for browsing and searching the documentation site. This gives your coding agent direct access to API references, guides, and examples without leaving the editor.
+
+The MCP endpoint is `https://developers.napster.com/mcp`. Add it to your tool:
+
+#### Claude Code
 
 ```
 claude mcp add napster-docs --transport http https://developers.napster.com/mcp
 ```
 
-For Cursor, VS Code / Copilot, Codex, or other MCP-capable tools, see the per-tool setup instructions at [developers.napster.com/ai-coding-tools](https://developers.napster.com/ai-coding-tools).
+#### Cursor
 
-### Option 2 — The agent skills (cross-tool Agent Skills package)
+Add to `.cursor/mcp.json` in your project (or `~/.cursor/mcp.json` for all projects):
 
-Adds the 12 skills so your coding agent has architectural guidance and best practices for the Omniagent API. Works in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others.
+```json
+{
+  "mcpServers": {
+    "napster-docs": {
+      "url": "https://developers.napster.com/mcp"
+    }
+  }
+}
+```
 
-In your project root:
+#### VS Code / Copilot (agent mode)
+
+Add to `.vscode/mcp.json` in your workspace (or in your user settings):
+
+```json
+{
+  "servers": {
+    "napster-docs": {
+      "type": "http",
+      "url": "https://developers.napster.com/mcp"
+    }
+  }
+}
+```
+
+#### Codex
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.napster-docs]
+url = "https://developers.napster.com/mcp"
+```
+
+#### Any other MCP-capable tool
+
+Use your tool's standard MCP HTTP server configuration with:
+
+| Field | Value |
+|---|---|
+| Name | `napster-docs` |
+| Transport | `http` |
+| URL | `https://developers.napster.com/mcp` |
+
+### Agent skills
+
+Napster publishes open-source skills for coding agents that provide architectural guidance and best practices for building Omniagents — covering workflow design, channel configuration, tool integration, and deployment patterns. Combined with the MCP server, skills give your coding agent deep expertise about building with the Omniagent API so it can look up the docs, understand the architecture, and generate code that follows best practices.
+
+Works in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others. In your project root:
 
 ```bash
 npx skills add napster/omniagent-api-skills
 ```
 
-The skills auto-trigger on natural language ("create a persona", "embed the agent in my React app", etc.). The `/omniagent-quickstart` slash command is Claude-Code-only — use the natural-language path in the other tools.
+### Claude plugin
 
-### Option 3 — The full Claude plugin (skills + MCP + quickstart wizard)
-
-Bundles the docs MCP server, all 12 skills, and the interactive `/omniagent-quickstart` wizard into a single plugin. Setup depends on which Claude environment you use.
+The Napster plugin bundles the MCP server and agent skills into a single package with an interactive `/omniagent-quickstart` wizard. Setup depends on which Claude environment you use.
 
 #### Claude Code (CLI and IDE extensions)
 
@@ -54,7 +111,7 @@ Recommended. The CLI always pulls the latest skills and MCP server.
 Step 1 — add the Napster marketplace:
 
 ```
-/plugin marketplace add napster/omniagent-api-skills
+/plugin marketplace add https://github.com/Napster/omniagent-api-skills.git
 ```
 
 Step 2 — install the plugin:
@@ -63,7 +120,7 @@ Step 2 — install the plugin:
 /plugin install napster-omniagent-api@napster
 ```
 
-To pull the latest version later, refresh the marketplace:
+To update to the latest version later:
 
 ```
 /plugin marketplace update napster
@@ -73,18 +130,33 @@ Third-party marketplaces don't auto-update by default in Claude Code, so this ma
 
 After install you'll have `/omniagent-quickstart` and all 12 skills auto-triggering on natural language.
 
-#### Claude (browser or desktop chat product)
+#### Claude (browser and desktop chat product)
 
-The chat product (claude.ai or the Claude Mac/Windows desktop app) uses a different install path — download the repo as a ZIP and upload it through the Customize UI:
+For the browser version (claude.ai) and the Mac/Windows desktop app, you need to download the plugin manually first.
 
-1. Go to [github.com/Napster/omniagent-api-skills](https://github.com/Napster/omniagent-api-skills), click the green **Code** button, and select **Download ZIP**.
-2. In claude.ai (browser) or the Claude desktop app, open the left sidebar and click **Customize**.
-3. Click **+ → Create plugin → Upload plugin** and select the ZIP.
-4. Click the new plugin in the sidebar to activate the skills, then open the **Connectors** tab and install the **Napster Docs** MCP server.
+**Step 1 — Download the plugin.** Go to the [Napster Omniagent API Skills repo](https://github.com/Napster/omniagent-api-skills), click the green **Code** button, and select **Download ZIP**. Save the file to your machine.
 
-ZIP installs **don't auto-update**. When we publish new skills you'll need to re-download and re-upload. If you want updates handled for you, use the Claude Code CLI path above.
+Skills installed from a ZIP **won't update automatically**. If we publish new skills, you'll need to re-download and re-upload. The Claude Code CLI handles updates for you.
 
-For step-by-step screenshots and per-tool setup details, see [developers.napster.com/ai-coding-tools](https://developers.napster.com/ai-coding-tools).
+**Step 2 — Install the plugin.**
+
+In Claude (browser, claude.ai):
+
+1. In the left sidebar, click **Customize**.
+2. Click the **+** button to add a plugin, then choose **Create plugin → Upload plugin**.
+3. Select the ZIP file you downloaded in Step 1.
+4. Once uploaded, click the plugin in the left sidebar — the skills install automatically.
+5. Open the **Connectors** tab — you'll see **Napster Docs** (the MCP server). Click **Install**.
+
+In Claude (desktop, Mac/Windows): same flow as above through the desktop app's **Customize** UI.
+
+### What you get
+
+Once installed, the plugin gives your coding agent:
+
+- Access to the full Omniagent API documentation via MCP
+- Architectural guidance for building Omniagents
+- A quickstart wizard that walks you through creating your first agent
 
 ### Manual install (any tool, or if none of the above fits)
 
