@@ -5,6 +5,7 @@
   "version": "0.1.0",
   "description": "Build with the Napster Omniagent API. Skills cover personas, agents, tools, knowledge, and every deployment channel (web, audio, phone). Includes a guided quickstart wizard, a framework-agnostic default panel (CSS + structural reference, adapted by the skill to any framework), an optional local token server for prototyping, and a polished troubleshooting index.",
   "author": {
+    "name": "Napster",
     "url": "https://developers.napster.com"
   },
   "homepage": "https://developers.napster.com",
