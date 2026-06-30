@@ -1,9 +1,9 @@
 ---
-name: setup-edge-mcp
+name: edge-mcp-setup
 description: Let a Napster Omniagent operate your website — expose your app's real operations as tools the in-page agent can call (what it can DO) and live state it can observe (what it can SEE), via the WebMCP standard (`document.modelContext`), wired against your app's real code. Use when the developer says "let the omniagent do things on my site", "add agent actions to my website", "expose my app to the agent", "agentify this app", or "set up WebMCP", or wants the embedded avatar to operate the real app instead of just talking. Pairs with [[deploy-webrtc]], which embeds the avatar — this is what gives that avatar hands. Stops once the tools are registered and the optional dev panel has been offered; connecting the agent SDK at runtime is the deploy step.
 ---
 
-# setup-edge-mcp
+# edge-mcp-setup
 
 Give a Napster Omniagent embedded on your site the ability to operate your app: a tiny in-browser layer that declares which of the app's real operations the agent may invoke and which state slices it may perceive. It lives in the same JavaScript runtime as the app's UI. Importing `@napster-corp/edge-mcp` polyfills the WebMCP standard so `document.modelContext` exists and installs a live-state resource extension on it; when an agent SDK initializes in the same page, it reads `document.modelContext` directly — no glue code from the developer.
 
@@ -17,7 +17,7 @@ Before any code: skim the actual source — components, the store, the service c
 
 Setting up WebMCP is a **one-time act per app**: you plan what to expose, then you register it. Planning is the first half of that act — not an optional preamble.
 
-**Invoke the `plan-capabilities-and-state` skill before doing anything else.** It analyzes the codebase, proposes a starter plan, and walks the developer through it until approved. The plan covers:
+**Invoke the `edge-mcp-plan-capabilities` skill before doing anything else.** It analyzes the codebase, proposes a starter plan, and walks the developer through it until approved. The plan covers:
 
 - The high-value workflows the agent should support
 - The tool list (each with its safety annotations and idempotency hint)
@@ -48,7 +48,7 @@ src/edge-mcp/
 
 **One tool per file.** Each file in `tools/` exports a single descriptor and registers nothing; the actual `document.modelContext.registerTool(...)` calls all happen one level up in `tools/index.ts`. This keeps each tool small and reviewable in isolation, makes the automation's diff per-tool, and still keeps the full exposed surface auditable in one read (the registrar lists every tool). Name each file after its tool, kebab-cased: `products.search` → `products-search.ts`, `cart.add` → `cart-add.ts`.
 
-Resources stay in a single `resources.ts` — they're the exception, not the rule (see step 4), and rarely number more than a few. A `handles.ts` file appears alongside only if a tool's `execute` needs framework context (see "the handle pattern" below), and a `dev-panel.ts` file appears later only if the developer opts into the optional `add-edge-mcp-dev-panel` skill. The setup itself never creates either unless needed.
+Resources stay in a single `resources.ts` — they're the exception, not the rule (see step 4), and rarely number more than a few. A `handles.ts` file appears alongside only if a tool's `execute` needs framework context (see "the handle pattern" below), and a `dev-panel.ts` file appears later only if the developer opts into the optional `edge-mcp-dev-panel` skill. The setup itself never creates either unless needed.
 
 ### `src/edge-mcp/index.ts`
 
@@ -524,7 +524,7 @@ The tools are wired but untested. Offer the developer the opt-in dev panel:
 
 > "Want me to install a dev-only panel for testing the integration? It mounts in dev mode, lists every registered tool with a form for its arguments (rendered from each tool's `inputSchema`), shows every resource with a live JSON view, and logs every invoke and resource update. Toggle with `Cmd+Shift+E`. Skip if you'd rather not — the tools work either way."
 
-If yes, run the `add-edge-mcp-dev-panel` skill — it handles the install and walks through usage. If no, the setup is done; testing is the developer's call.
+If yes, run the `edge-mcp-dev-panel` skill — it handles the install and walks through usage. If no, the setup is done; testing is the developer's call.
 
 ## 9. Verify at runtime, then sign off
 

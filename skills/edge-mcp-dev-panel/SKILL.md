@@ -1,9 +1,9 @@
 ---
-name: add-edge-mcp-dev-panel
-description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to your Napster Omniagent by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test the omniagent's website tools", "add a UI for testing the agent bridge", or accepts the offer at the end of [[setup-edge-mcp]]. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
+name: edge-mcp-dev-panel
+description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to your Napster Omniagent by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test the omniagent's website tools", "add a UI for testing the agent bridge", or accepts the offer at the end of [[edge-mcp-setup]]. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
 ---
 
-# add-edge-mcp-dev-panel
+# edge-mcp-dev-panel
 
 Add an opt-in, dev-only floating panel that mounts inside the app's own runtime and gives the developer a UI for testing the website tools exposed to a Napster Omniagent by hand: pick a tool, fill in its arguments using fields rendered from the tool's `inputSchema`, click Run, watch the resource updates scroll by in an event log. The panel is a development convenience, not part of the bridge — the WebMCP surface works the same with or without it.
 
@@ -15,15 +15,15 @@ Run this skill when **all** of these are true:
 
 - The WebMCP toolkit is already set up in the target app (the toolkit is imported so its polyfill installs `document.modelContext`, and tools and live-state resources are registered).
 - The developer wants a UI-driven way to exercise the bridge, instead of typing into DevTools or writing tests in their existing suite.
-- The developer has accepted the panel — they were offered it at the end of `setup-edge-mcp`, or asked for it directly.
+- The developer has accepted the panel — they were offered it at the end of `edge-mcp-setup`, or asked for it directly.
 
-If the toolkit isn't set up yet, stop and route the developer to `setup-edge-mcp` first. If the developer hasn't been asked whether they want the panel, ask before installing — this is opt-in scaffolding, not a default.
+If the toolkit isn't set up yet, stop and route the developer to `edge-mcp-setup` first. If the developer hasn't been asked whether they want the panel, ask before installing — this is opt-in scaffolding, not a default.
 
 ## 0. Confirm prerequisites
 
 Before any changes:
 
-- Verify `@napster-corp/edge-mcp` is listed in the app's `package.json`. If not, the bridge isn't installed and `setup-edge-mcp` is the right place to start.
+- Verify `@napster-corp/edge-mcp` is listed in the app's `package.json`. If not, the bridge isn't installed and `edge-mcp-setup` is the right place to start.
 - Locate the `src/edge-mcp/` folder — `src/edge-mcp/index.ts` is where the toolkit is imported and tools are registered, with the `tools/` folder (one file per tool + `tools/index.ts` registrar) and `resources.ts` alongside it. If the app uses a different location (`src/lib/edge-mcp/`, `app/lib/edge-mcp/`, etc.), `grep -r '@napster-corp/edge-mcp' src/` confirms the path.
 - Identify how the app expresses "dev mode" — `import.meta.env.DEV` (Vite/Astro), `process.env.NODE_ENV === 'development'` (Next.js/Webpack/CRA), `__DEV__` (some custom setups). Match the app's existing convention.
 

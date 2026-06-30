@@ -1,15 +1,15 @@
 ---
-name: sync-edge-mcp-tools
-description: Keep your website's Omniagent tools in sync with your app's code — analyze the app, reconcile the tools/ folder (add / update / remove one descriptor file per tool, keep the registrar in sync), editing only files in that folder. This is the exact task the `edge-mcp generate` automation runs (post-commit hook or CI), and it can also be followed directly in chat. Defers layout, safety annotations, and methodology to [[setup-edge-mcp]] and [[plan-capabilities-and-state]].
+name: edge-mcp-sync-tools
+description: Keep your website's Omniagent tools in sync with your app's code — analyze the app, reconcile the tools/ folder (add / update / remove one descriptor file per tool, keep the registrar in sync), editing only files in that folder. This is the exact task the `edge-mcp generate` automation runs (post-commit hook or CI), and it can also be followed directly in chat. Defers layout, safety annotations, and methodology to [[edge-mcp-setup]] and [[edge-mcp-plan-capabilities]].
 ---
 
-# sync-edge-mcp-tools
+# edge-mcp-sync-tools
 
 Keep your website's Napster Omniagent tool registrations in sync with the app's code. You are running inside the app's repository — your working directory is the app root.
 
 This task is **universal**: it is identical whether it runs from the post-commit console (`edge-mcp generate`) or is followed as a skill in chat. It names no fixed path — where the `tools/` folder lives is decided by the methodology skills and the app's own conventions, not by this instruction.
 
-Follow the **`plan-capabilities-and-state`** and **`setup-edge-mcp`** skills EXACTLY. They are your source of truth for the analysis approach, the safety annotations, naming, what to deliberately withhold, and the layout (conventional: a `src/edge-mcp/tools/` folder where **each tool is its own file that `export const tool = { … }`** and `tools/index.ts` registers them all via `document.modelContext.registerTool(...)` — but adapt to the app's actual structure). When this task is run by the automation, those two skills are inlined below the instruction; in chat, load them as skills.
+Follow the **`edge-mcp-plan-capabilities`** and **`edge-mcp-setup`** skills EXACTLY. They are your source of truth for the analysis approach, the safety annotations, naming, what to deliberately withhold, and the layout (conventional: a `src/edge-mcp/tools/` folder where **each tool is its own file that `export const tool = { … }`** and `tools/index.ts` registers them all via `document.modelContext.registerTool(...)` — but adapt to the app's actual structure). When this task is run by the automation, those two skills are inlined below the instruction; in chat, load them as skills.
 
 ## Steps
 

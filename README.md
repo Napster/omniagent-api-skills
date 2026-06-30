@@ -182,10 +182,10 @@ omniagent-api-skills/
 │   ├── deploy-phone/                   Phone channel — a number the agent answers (VoIP or SIP)
 │   ├── session-runtime/                Per-session config, server events, client commands
 │   ├── monitor-sessions/               List sessions, pull transcripts
-│   ├── setup-edge-mcp/                 Let the omniagent operate your website (expose tools + live state via WebMCP)
-│   ├── plan-capabilities-and-state/    Plan what the omniagent can DO and SEE on your site
-│   ├── add-edge-mcp-dev-panel/         Dev-only panel to test your website's omniagent tools
-│   ├── sync-edge-mcp-tools/            Keep your website's omniagent tools in sync with your code
+│   ├── edge-mcp-setup/                 Let the omniagent operate your website (expose tools + live state via WebMCP)
+│   ├── edge-mcp-plan-capabilities/    Plan what the omniagent can DO and SEE on your site
+│   ├── edge-mcp-dev-panel/         Dev-only panel to test your website's omniagent tools
+│   ├── edge-mcp-sync-tools/            Keep your website's omniagent tools in sync with your code
 │   └── troubleshoot-omniagent/         The pitfall index, organized by area
 └── assets/
     ├── omniagent-ui.css                Canonical panel styles (framework-agnostic)
