@@ -422,7 +422,7 @@ So `cart` is a good resource (the user can edit it directly in the UI) and `orde
 
 Safety is expressed entirely with **standard MCP annotation hints** on the tool. `readOnlyHint`, `destructiveHint`, `idempotentHint`, and `untrustedContentHint` are all standard MCP hints — set them in the tool's `annotations` and the consumer reads them straight off the registered tool.
 
-Keep the same three-level mental model — read / reversible / irreversible — but express each level as a standard annotation combo:
+A simple way to pick the right hints: think of each tool as one of three levels — read / reversible / needs-confirmation — and set the annotation combo for that level:
 
 | Level | Annotations | What it is | Example | Consumer behavior |
 |---|---|---|---|---|
@@ -464,26 +464,29 @@ export const tool = {
 
 Tighten what the type alone can't express (a `string` that's really an enum, numeric bounds, `format` for emails/UUIDs/URLs), and redact sensitive fields from what `execute` returns.
 
-If the app uses a runtime schema library like Zod, derive JSON Schema from it and validate at the boundary:
+If the app uses a runtime schema library like Zod, make each tool **type-linked** so tool/code drift becomes a compile error, not a runtime surprise. Two moves: (1) define the input ONCE as a schema and derive the JSON Schema from it, and (2) import the real backend function directly (typed) — so a rename or a changed signature breaks THIS file at `tsc` time.
 
 ```ts
 import { z } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
+import { searchProducts } from '@/lib/catalog'; // the REAL function, typed — a rename breaks this line
 
-const SearchArgs = z.object({ query: z.string(), maxPrice: z.number().optional() });
+const SearchArgs = z.object({ query: z.string().min(1), maxPrice: z.number().optional() });
 
-// src/edge-mcp/tools/products-search.ts
+// src/edge-mcp/tools/products-search.ts — exported as data (unit-testable without a live modelContext)
 export const tool = {
   name: 'products.search',
   description: 'Search the catalog and return matching products.',
-  inputSchema: zodToJsonSchema(SearchArgs) as Record<string, unknown>,
+  inputSchema: z.toJSONSchema(SearchArgs) as Record<string, unknown>, // zod 4 native; the agent's schema is DERIVED
   annotations: { readOnlyHint: true },
   async execute(args) {
-    const results = await searchProducts(SearchArgs.parse(args));   // validate at the boundary
+    const { query, maxPrice } = SearchArgs.parse(args); // validated AND typed at the boundary
+    const results = await searchProducts(query, maxPrice); // typed call into the app's real code
     return { content: [{ type: 'text', text: JSON.stringify(results) }] };
   },
 };
 ```
+
+The schema is the single source of truth for the args (it derives both the JSON Schema the agent sees and the TS type `execute` gets), and the typed import means a refactor of `searchProducts` can't silently leave this tool behind. (On Zod 3, `z.toJSONSchema` isn't available — use the `zod-to-json-schema` package instead.)
 
 ### What about tools with no arguments?
 

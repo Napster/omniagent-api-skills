@@ -1,8 +1,8 @@
 # Napster Omniagent API — Skills
 
-The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
+The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a set for giving the agent hands and eyes on your own site (WebMCP / Edge MCP), a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
 
-**Where it runs:** the 12 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
+**Where it runs:** the 16 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
 
 ## After install, start here
 
@@ -123,7 +123,7 @@ To update to the latest version later:
 
 Third-party marketplaces don't auto-update by default in Claude Code, so this manual refresh is how you'll get new skills, MCP changes, or bug fixes. (You can enable auto-update per marketplace via `/plugin → Marketplaces → Enable auto-update` if you prefer that workflow.)
 
-After install you'll have `/omniagent-quickstart` and all 12 skills auto-triggering on natural language.
+After install you'll have `/omniagent-quickstart` and all 16 skills auto-triggering on natural language.
 
 #### Claude (browser and desktop chat product)
 
