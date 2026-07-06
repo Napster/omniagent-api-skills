@@ -1,11 +1,11 @@
 ---
 name: edge-mcp-dev-panel
-description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to your Napster Omniagent by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test the omniagent's website tools", "add a UI for testing the agent bridge", or accepts the offer at the end of [[edge-mcp-setup]]. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
+description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to AI agents via WebMCP by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test my website's agent tools", "test the omniagent's website tools", "add a UI for testing the agent bridge", or accepts the offer at the end of [[edge-mcp-setup]]. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
 ---
 
 # edge-mcp-dev-panel
 
-Add an opt-in, dev-only floating panel that mounts inside the app's own runtime and gives the developer a UI for testing the website tools exposed to a Napster Omniagent by hand: pick a tool, fill in its arguments using fields rendered from the tool's `inputSchema`, click Run, watch the resource updates scroll by in an event log. The panel is a development convenience, not part of the bridge — the WebMCP surface works the same with or without it.
+Add an opt-in, dev-only floating panel that mounts inside the app's own runtime and gives the developer a UI for testing the website tools exposed to AI agents via WebMCP by hand: pick a tool, fill in its arguments using fields rendered from the tool's `inputSchema`, click Run, watch the resource updates scroll by in an event log. The panel is a development convenience, not part of the bridge — the WebMCP surface works the same with or without it.
 
 The panel reads `document.modelContext` itself — the standard surface the `@napster-corp/edge-mcp` polyfill installs on import. It does **not** take any instance; there is no bridge object to hand it.
 

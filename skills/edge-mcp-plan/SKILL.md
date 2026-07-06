@@ -1,19 +1,19 @@
 ---
-name: edge-mcp-plan-capabilities
-description: Plan what a Napster Omniagent should be able to DO and SEE on your website before wiring it up — a curated set of your app's operations to expose as agent tools, state slices to expose as live resources, and deliberate withholds. Use when the developer asks "what should the omniagent be able to do on my site?", "which actions should I expose to the agent?", "what can my app do that the agent should know about?", or before running [[edge-mcp-setup]] on a new app. Produces a conversational plan the developer reviews and approves — no file output. [[edge-mcp-setup]] invokes this automatically if no plan has been agreed yet.
+name: edge-mcp-plan
+description: Plan what an AI agent should be able to DO and SEE on your website before agentifying it — a curated set of your app's operations to expose as agent tools, state slices to expose as live resources, and deliberate withholds. Vendor-neutral — the plan targets any WebMCP-compatible agent, a Napster Omniagent included. Use when the developer asks "what should the agent be able to do on my site?", "what should the omniagent be able to do on my site?", "which actions should I expose to the agent?", "what can my app do that the agent should know about?", or before running [[edge-mcp-setup]] on a new app. Produces a conversational plan the developer reviews and approves — no file output. [[edge-mcp-setup]] invokes this automatically if no plan has been agreed yet.
 ---
 
-# edge-mcp-plan-capabilities
+# edge-mcp-plan
 
-Plan what a Napster Omniagent embedded on the developer's website should be able to do and see: read the existing web app and propose a starter plan for which operations should be exposed as **capabilities** the agent can invoke, which state slices should be exposed as **live-state resources** the agent can observe, and what should be deliberately **withheld**.
+Plan what an AI agent operating the developer's website should be able to do and see: read the existing web app and propose a starter plan for which operations should be exposed as **capabilities** the agent can invoke, which state slices should be exposed as **live-state resources** the agent can observe, and what should be deliberately **withheld**.
 
-The output is a conversation, not a file. The developer reviews each item, edits or rejects freely, and approves the final list. That approved plan flows directly into the `edge-mcp-setup` skill, which turns it into code.
+The output is a conversation, not a file. The developer reviews each item, edits or rejects freely, and approves the final list. That approved plan flows directly into the `edge-mcp-implement` skill (invoked by the `edge-mcp-setup` orchestrator), which turns it into code.
 
 **Why this skill exists.** Without it, a developer setting up WebMCP starts from a blank canvas — they have to invent the capability list while also reasoning about safety annotations, the live-state resource gate, and what to deliberately withhold. That's high cognitive load. This skill does the inventory work first, so the developer reviews a structured proposal instead of brainstorming from scratch.
 
 ## 0. Confirm you're reading the real target app
 
-Before any analysis: skim the actual source — components, the store, the service calls the UI makes, the route structure. Don't trust ambient context files (`CLAUDE.md`, READMEs, project docs) if they describe a different project or contradict the code; the running code is the source of truth, and a stale context file has sent past runs down the wrong path.
+Before any analysis: study the actual source until you understand how the app really works — components, the store, the service calls the UI makes, the route structure. This is not a quick glance; the whole plan depends on knowing what operations genuinely exist and how they're invoked, so read deeply enough to answer that from the code itself. Don't trust ambient context files (`CLAUDE.md`, READMEs, project docs) if they describe a different project or contradict the code; the running code is the source of truth, and a stale context file has sent past runs down the wrong path.
 
 If the codebase doesn't match the developer's description, stop and verify before proceeding.
 
@@ -50,7 +50,7 @@ For each high-value workflow, identify the real operations in the codebase that 
 
 - **Name** — in the app's own domain terms, as `domain.verb`. Make cardinality obvious (`products.viewDetails` for one, `products.search` for many).
 - **One-line purpose** — what the agent uses it for.
-- **Arguments** — the input shape, in plain language drawn from the real function signature. List each argument with its type and whether it's required, or write "(no arguments)" if there are none. Example: "query (string, required), maxPrice (number, optional)". You are not writing JSON Schema yet — that's `edge-mcp-setup`'s job — but every capability's arguments must surface here, because the agent cannot use a capability whose input shape is unknown.
+- **Arguments** — the input shape, in plain language drawn from the real function signature. List each argument with its type and whether it's required, or write "(no arguments)" if there are none. Example: "query (string, required), maxPrice (number, optional)". You are not writing JSON Schema yet — that's `edge-mcp-implement`'s job — but every capability's arguments must surface here, because the agent cannot use a capability whose input shape is unknown.
 - **Safety level** — read / reversible / needs-confirmation, using the table below. This becomes the tool's standard annotation combo at setup time.
 - **Idempotency** — only relevant for needs-confirmation (`destructiveHint`) capabilities; mark `true` only if the underlying operation tolerates safe retry (e.g. via an idempotency key). It maps to `idempotentHint: true` at setup time.
 - **Evidence** — the file and function in the codebase that backs it (e.g. `src/api/products.ts:searchProducts`). The developer should be able to grep-verify in seconds.
@@ -114,6 +114,8 @@ The framing here is important: **exposing a capability is an approval, not an in
 
 ## 5. Present the plan to the developer
 
+**Speak the app's language, not WebMCP's.** Frame every question in the app's own terms. Ask "should the agent be able to see the cart after the user edits it by hand?", not "should we lift the cart's component state into an observable store and add a resource subscriber?" Translate the mechanics yourself; the developer shouldn't have to learn WebMCP to answer.
+
 Walk through the plan in conversation. Use a clear structure:
 
 1. **Domain summary + high-value workflows** — confirm framing.
@@ -150,7 +152,7 @@ Once the plan is approved, summarize the final state:
 - Q items deliberately withheld
 - R deflections noted
 
-Then prompt to continue with `edge-mcp-setup` (or remind the developer that's the natural next step if they invoked this skill directly). The setup skill picks up the approved plan and turns it into registered code.
+Then prompt to continue with `edge-mcp-setup` (or remind the developer that's the natural next step if they invoked this skill directly). The orchestrator hands the approved plan to `edge-mcp-implement`, which turns it into registered code.
 
 ### If the plan came out at zero
 
@@ -162,7 +164,7 @@ Skip the setup. A zero-plan is a sign that this skill did its job — not a fail
 
 ## What you will NOT do in this skill
 
-- Write any code. This skill is conversational. Code happens in `edge-mcp-setup`.
+- Write any code. This skill is conversational. Code happens in `edge-mcp-implement`.
 - Produce a JSON or markdown file. The plan lives in the conversation; the code is the record.
 - Skip the gate for live-state resources. Every resource must have a one-line justification that maps to user-edit or server-side change.
 - Approve items the developer hasn't reviewed. "Looks good?" with no explicit approval doesn't count.

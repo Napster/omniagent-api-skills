@@ -1,8 +1,8 @@
 # Napster Omniagent API — Skills
 
-The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
+The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a set for agentifying your own website (WebMCP / Edge MCP — expose its real operations and live state so any compatible agent, your Omniagent included, can operate it), a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
 
-**Where it runs:** the 12 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
+**Where it runs:** the 17 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
 
 ## After install, start here
 
@@ -123,7 +123,7 @@ To update to the latest version later:
 
 Third-party marketplaces don't auto-update by default in Claude Code, so this manual refresh is how you'll get new skills, MCP changes, or bug fixes. (You can enable auto-update per marketplace via `/plugin → Marketplaces → Enable auto-update` if you prefer that workflow.)
 
-After install you'll have `/omniagent-quickstart` and all 12 skills auto-triggering on natural language.
+After install you'll have `/omniagent-quickstart` and all 17 skills auto-triggering on natural language.
 
 #### Claude (browser and desktop chat product)
 
@@ -182,10 +182,11 @@ omniagent-api-skills/
 │   ├── deploy-phone/                   Phone channel — a number the agent answers (VoIP or SIP)
 │   ├── session-runtime/                Per-session config, server events, client commands
 │   ├── monitor-sessions/               List sessions, pull transcripts
-│   ├── edge-mcp-setup/                 Let the omniagent operate your website (expose tools + live state via WebMCP)
-│   ├── edge-mcp-plan-capabilities/    Plan what the omniagent can DO and SEE on your site
-│   ├── edge-mcp-dev-panel/         Dev-only panel to test your website's omniagent tools
-│   ├── edge-mcp-sync-tools/            Keep your website's omniagent tools in sync with your code
+│   ├── edge-mcp-setup/                 Agentify your website — the orchestrator that runs the four skills below
+│   ├── edge-mcp-plan/                  Plan what an agent can DO and SEE on your site
+│   ├── edge-mcp-implement/             Build the approved plan — register tools + live state, verify at runtime
+│   ├── edge-mcp-dev-panel/             Dev-only panel to test your website's agent tools by hand
+│   ├── edge-mcp-sync/                  Keep your website's agent tools in sync as your app changes
 │   └── troubleshoot-omniagent/         The pitfall index, organized by area
 └── assets/
     ├── omniagent-ui.css                Canonical panel styles (framework-agnostic)
