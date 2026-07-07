@@ -1,6 +1,6 @@
 ---
 name: edge-mcp-sync
-description: Keep your website's agent tools (the WebMCP surface) in sync with your app's code — analyze the app, reconcile the tools/ folder (add / update / remove one descriptor file per tool, keep the registrar in sync), editing only files in that folder. Run it two ways: in chat whenever you and the agent change the app together (no git or tooling needed), or via the `edge-mcp generate` automation (the marker-gated post-commit hook / CI, for developers who commit by hand). Defers layout, safety annotations, and methodology to [[edge-mcp-plan]] and [[edge-mcp-implement]].
+description: Keep your website's agent tools (the WebMCP surface) in sync with your app's code — analyze the app, reconcile the tools/ folder (add / update / remove one descriptor file per tool, keep the registrar in sync), editing only files in that folder. Run it two ways — in chat whenever you and the agent change the app together (no git or tooling needed), or via the `edge-mcp generate` automation (the marker-gated post-commit hook / CI, for developers who commit by hand). Defers layout, safety annotations, and methodology to [[edge-mcp-plan]] and [[edge-mcp-implement]].
 ---
 
 # edge-mcp-sync
