@@ -1,6 +1,6 @@
 ---
 name: edge-mcp-dev-panel
-description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to AI agents via WebMCP by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test my website's agent tools", "test the omniagent's website tools", "add a UI for testing the agent bridge", or accepts the offer at the end of [[edge-mcp-setup]]. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
+description: Add a small, opt-in, dev-only panel for testing the website tools you've exposed to AI agents via WebMCP by hand — every registered tool with a form for its arguments (rendered from the tool's `inputSchema`), every live-state resource with a live JSON view, and an event log of tool calls and state updates. Use when the developer says "add a dev panel", "I want to test my website's agent tools", "test the omniagent's website tools", "add a UI for testing the agent bridge", "build my own/custom panel", "read getTools()/subscribeResource myself", or accepts the offer at the end of [[edge-mcp-setup]]. Also covers building a CUSTOM panel against `document.modelContext` when the packaged one isn't enough. Dev-only and excluded from production bundles. Opt-in — skip it if the developer prefers the browser console or their own tests.
 ---
 
 # edge-mcp-dev-panel
@@ -51,6 +51,8 @@ A small wrapper that handles the dev-mode guard and the dynamic import. The dyna
 - **Some custom setups** → `__DEV__` (define-replaced at build)
 
 How to tell: search the existing codebase for one of these patterns. Use whichever one already appears in the app's own code. If none appear and the framework isn't listed above, ask the developer.
+
+**TypeScript may not know `import.meta.env`.** If `import.meta.env.DEV` errors under `tsc` ("Property 'env' does not exist on type 'ImportMeta'"), the project is missing Vite's client types. Check `src/vite-env.d.ts` exists with `/// <reference types="vite/client" />` (Vite scaffolds it, but hand-rolled or migrated projects often lack it) — add the file if it's absent.
 
 **Vite-style (the most common):**
 
@@ -118,12 +120,16 @@ It returns an `uninstall()` function. The developer doesn't need to call it norm
 
 The panel is a fixed-position floating div in the bottom-right of the viewport, hidden by default to keep the dev experience uncluttered. **Toggle with `Cmd+Shift+E`** (or `Ctrl+Shift+E` on Windows/Linux). A small circular "E" toggle button also appears in the same corner when the panel is closed, so the developer doesn't need to remember the shortcut.
 
-`installDevPanel({ shortcut?, startOpen? })` accepts two optional settings (options-only, no instance argument); edit `src/edge-mcp/dev-panel.ts` to pass them through if the customer wants non-default behavior:
+`installDevPanel({ shortcut?, startOpen?, font?, height? })` accepts options-only settings (no instance argument); edit `src/edge-mcp/dev-panel.ts` to pass them through if the customer wants non-default behavior:
 
 - **`shortcut`** — the keyboard combo (default `'Cmd+Shift+E'`, `Ctrl+Shift+E` on non-Mac). Accepts `Cmd`, `Ctrl`, `Shift`, `Alt`, `Meta` modifiers plus a single key.
 - **`startOpen`** — `true` to mount the panel open instead of hidden (default `false`). Useful for the first run-through so the developer sees it immediately.
+- **`font`** — panel UI font. Defaults to the app's own font (read from `document.body`) so the panel matches the app's typography instead of the OS system font; pass a CSS `font-family` to override. Code/JSON always render mono.
+- **`height`** — panel height in px (default `600`, clamped to the viewport). The panel holds this height and scrolls its content internally, so it never resizes as content changes.
 
 The panel never auto-opens unless `startOpen: true` is passed — the developer chooses when to look at it. This keeps the rest of the dev experience unchanged.
+
+The defaults already reflect the good UX (fixed height, app-matched font, collapsible JSON, searchable tool dropdown, deduped log — see below), so most installs pass no options at all.
 
 ## 3. What the panel shows
 
@@ -142,7 +148,7 @@ If no resources are registered, the section shows an empty-state explaining that
 
 ### Tools
 
-A list of every registered tool, sorted alphabetically by name, grouped by safety level (read → reversible → irreversible). The panel **derives** each label from the tool's standard annotations rather than from any recorded field: `readOnlyHint: true` → read, `destructiveHint: true` → irreversible, neither → reversible. Each tool shows:
+A **single searchable dropdown** picks the tool to test — click it, type to filter by name, choose one, and only that tool's form renders below. One tool on screen at a time; nothing is selected until the developer picks. The dropdown shows each tool's derived safety level inline. The panel **derives** each label from the tool's standard annotations rather than from any recorded field: `readOnlyHint: true` → read, `destructiveHint: true` → irreversible, neither → reversible. The selected tool shows:
 
 - Name, description, derived safety level (color-coded), and the `idempotentHint` flag.
 - A form with one field per argument, **rendered from the tool's `inputSchema`**. The field types follow the schema:
@@ -164,9 +170,9 @@ A chronological list (newest at top) of every event since the panel mounted:
 
 - `CALL <name>` with the args object — emitted before `executeTool`.
 - `RESULT <name>` with the return — emitted after.
-- `STATE <name>` with the new value — emitted on every `resourceupdated` event.
+- `STATE <name>` with the new value — emitted on `resourceupdated`, **deduped by value**: a resource that re-emits an unchanged value (an echo — common when `subscribe` is wired to a whole store that fires several times per operation) does not add a repeat entry, and the initial hydration burst is suppressed via a per-URI baseline seeded at mount.
 
-Each entry timestamps to the millisecond. The log holds the last 200 entries by default; older entries roll off.
+Each entry timestamps to the millisecond, and object/array payloads render as collapsible JSON trees. The log holds the last 200 entries by default; older entries roll off.
 
 ## 4. What this skill does NOT do
 
@@ -188,6 +194,84 @@ Walk the developer through:
 - A one-minute demo path: open the app in dev, press the shortcut, run one `read` tool, watch the resource view update if a related live-state resource is registered.
 
 Then prompt them to keep going: "Anything missing? Wrong shortcut? The shortcut is configurable — let me know if you want to tweak it."
+
+## Build your own panel
+
+The packaged `installDevPanel` is the default and covers most needs — fixed height, app-matched font, collapsible JSON, a searchable tool dropdown, a deduped log. Reach for a custom panel only when you need UX it can't give you: your own layout or framework components, a panel embedded in an existing dev surface, app-native styling beyond the `font` option. When you do, you consume the same standard surface the packaged panel reads — `document.modelContext` — directly. There's no bridge object and nothing to hand it.
+
+The packaged panel's source (`src/dev-panel.ts` in `@napster-corp/edge-mcp`) is the worked reference for everything below; when in doubt, read how it does it.
+
+**The surface you consume:**
+
+- `await mc.getTools()` → tool list. `await mc.executeTool(toolInfo, argsJson)` → run one.
+- `mc.getResources()` / `await mc.readResource(uri)` → live-state values (the resource extension). `mc.subscribeResource(uri, handler)` → push updates. (`mc.addEventListener('resourceupdated', …)` is the lower-level equivalent the packaged panel uses.)
+
+Four gotchas will bite a hand-rolled consumer. Each is already handled inside the packaged panel; bake them into yours too.
+
+### 1. `inputSchema` comes back as a JSON string — parse it
+
+`getTools()` returns each tool's `inputSchema` as a JSON **string** (Chromium's native contract, matched by the polyfill), not an object. Parse before you render a form from it, and tolerate both shapes (a foreign surface may hand back an object):
+
+```ts
+function coerceSchema(raw: unknown): Record<string, unknown> {
+  if (raw && typeof raw === 'object') return raw as Record<string, unknown>;
+  if (typeof raw === 'string') { try { return JSON.parse(raw); } catch { /* fall through */ } }
+  return { type: 'object', properties: {} };
+}
+const schema = coerceSchema(tool.inputSchema);
+```
+
+See `coerceInputSchema` in `dev-panel.ts`.
+
+### 2. `executeTool` resolves with the envelope — unwrap it
+
+`executeTool(toolInfo, JSON.stringify(args))` resolves with `JSON.stringify(<ToolResult>)` — a JSON string of the standard envelope `{"content":[{"type":"text","text":"…"}]}` — or `null` when the tool's `execute` returned `undefined`, and **rejects** on unknown tool / validation failure / abort. Don't render the raw envelope; unwrap to the text (which may itself be JSON the tool stringified in):
+
+```ts
+const raw = await mc.executeTool(toolInfo, JSON.stringify(args)); // may throw
+const text = raw == null ? '(no output)' : JSON.parse(raw).content?.[0]?.text ?? raw;
+```
+
+Pass `toolInfo` — the exact object `getTools()` returned — never a hand-built `{ name }`: Chromium's native `executeTool` requires the original handle. See `invokeTool` / `unwrapToolOutput` in `dev-panel.ts`.
+
+### 3. Dedupe chatty resource echoes with a per-URI baseline
+
+`resourceupdated` fires on **every** producer signal — the extension re-reads `get()` and emits without diffing. A store that fires several `set()`s per operation (`setPending → setError → setCart → setPending`) emits the same value repeatedly, and the initial hydration fires too. If you log every emission verbatim, your panel fills with echoes. Seed a per-URI baseline from the initial `readResource`, then in the handler skip anything that matches the baseline (echo) or that arrives before a baseline exists (hydration):
+
+```ts
+const stableKey = (v: unknown) => { try { return JSON.stringify(v) ?? 'null'; } catch { return String(v); } };
+const lastSeen: Record<string, string> = {};
+
+// seed baselines up front (see gotcha 4 for the ordering)
+for (const r of mc.getResources()) lastSeen[r.uri] = stableKey(await mc.readResource(r.uri));
+
+function onUpdate(u: { uri: string; value: unknown }) {
+  const key = stableKey(u.value);
+  const prev = lastSeen[u.uri];
+  lastSeen[u.uri] = key;
+  if (prev === undefined || prev === 'null' || prev === key) return; // hydration / echo → update UI silently, skip logging
+  logStateChange(u);
+}
+```
+
+The better fix is upstream — a producer that subscribes to its slice, not the whole store, emits far fewer echoes ([[edge-mcp-implement]] §3, "Keep the signal clean at the source"). But a consumer should never assume that; always dedupe. See the `lastSeen` baseline in `dev-panel.ts`.
+
+### 4. Subscribe synchronously — never after an `await`
+
+`subscribeResource` returns an unsubscribe function. Capture it **before** any async work, so a teardown-able lifecycle (React effect cleanup, Vue `onBeforeUnmount`, Svelte, etc.) can always call it. If you subscribe *after* an `await` inside an effect, a fast unmount/remount can run cleanup before the subscription exists — the unsub is never captured, the listener leaks, and every emission double-fires. Subscribe first, then do the initial reads in a separate async pass:
+
+```ts
+useEffect(() => {
+  const infos = mc.getResources();
+  // ✅ subscribe first (synchronous) — cleanup always has the unsub
+  const unsubs = infos.map((info) => mc.subscribeResource(info.uri, onUpdate));
+  // then seed initial values asynchronously
+  (async () => { for (const info of infos) seed(info.uri, await mc.readResource(info.uri)); })();
+  return () => unsubs.forEach((u) => u());
+}, []);
+```
+
+The packaged panel sidesteps this by subscribing synchronously at mount (no effect re-runs) and seeding baselines in a fire-and-forget pass — same principle.
 
 ## Failure modes worth flagging
 
