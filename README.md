@@ -95,6 +95,8 @@ Works in any tool that follows the [open Agent Skills spec](https://agentskills.
 npx skills add napster/omniagent-api-skills
 ```
 
+> **Restart your agent session after installing.** Skills are discovered at session start, so a session that was already running won't see the new skills until you restart it (Claude Code: exit and relaunch, or start a new session; other tools: reload the window or open a fresh session). If the skills don't trigger right after install, this is why.
+
 ### Claude plugin
 
 The Napster plugin bundles the MCP server and agent skills into a single package with an interactive `/omniagent-quickstart` wizard. Setup depends on which Claude environment you use.

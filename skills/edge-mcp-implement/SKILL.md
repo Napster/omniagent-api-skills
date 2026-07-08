@@ -29,10 +29,10 @@ Importing the package is a browser-only side effect: it polyfills the WebMCP sta
 
 Everything else — the folder's location and name, TypeScript vs JavaScript, file idiom, how the entry point pulls it in — is convention, adapted to the app. The **default convention** below fits most JS apps; use it when the app doesn't suggest otherwise, and adapt it without hesitation when it does (`src/lib/edge-mcp/`, `app/lib/edge-mcp/`, plain `.js` files, etc.).
 
-**No package manager or build step?** (a server-rendered app with sprinkled scripts — WordPress, Rails/Django/PHP templates — or a static no-build site): skip `npm install` and use the package's pre-bundled script-tag build instead (available from edge-mcp `>= 1.2.0`). Load it once, version-pinned, before any registrations:
+**No package manager or build step?** (a server-rendered app with sprinkled scripts — WordPress, Rails/Django/PHP templates — or a static no-build site): skip `npm install` and use the package's pre-bundled script-tag build instead. Load it once, version-pinned, before any registrations:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@napster-corp/edge-mcp@1.2/dist/edge-mcp.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@napster-corp/edge-mcp@0.1/dist/edge-mcp.iife.min.js"></script>
 ```
 
 It has the identical side effect as the import (polyfill + resource extension), and everything after it is the standard `document.modelContext` surface in plain scripts — zero imports (`registerResource` is installed on `document.modelContext` too). The invariants still hold: keep all registrations in one auditable place (e.g. a single `edge-mcp-tools.js` the pages include), one descriptor per tool, load order polyfill-first. Tell the developer you're using the script-tag path and why.
@@ -333,7 +333,33 @@ export function EdgeMcpHandles() {
 
 Mount `<EdgeMcpHandles />` once near the top of the tree (just inside the root layout / app shell). The tool is now callable from anywhere.
 
-Same pattern applies to other framework-context APIs: add `setToastHandle`, `setDialogHandle`, `setQueryClientHandle`, etc. to `handles.ts` and set them all from the same in-tree component. One handles file keeps the whole pattern visible in one place.
+**Plain React Router + Vite variant.** The same pattern in the most common non-framework SPA stack (`react-router-dom` + Vite, no Next/Remix). Same `handles.ts` as above; the differences are all in where the component mounts:
+
+```tsx
+// src/components/EdgeMcpHandles.tsx
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { setNavHandle } from '../edge-mcp/handles';
+
+export function EdgeMcpHandles() {
+  const navigate = useNavigate();
+  useEffect(() => setNavHandle((path) => navigate(path)), [navigate]);
+  return null;
+}
+```
+
+```tsx
+// src/App.tsx — mount INSIDE <BrowserRouter>, above <Routes>
+<BrowserRouter>
+  <EdgeMcpHandles />
+  <Routes>…</Routes>
+</BrowserRouter>
+```
+
+Two gotchas specific to this stack:
+
+- **`useNavigate` only works inside `<BrowserRouter>`.** Mounting `<EdgeMcpHandles />` outside the router (next to it instead of inside it) throws at render. Keep the handles component *inside* the router, above the routes.
+- **Post-mutation navigation should be best-effort.** When a mutating tool navigates *after* its real work succeeded (add to cart, then show the cart), call the handle through a variant that logs instead of throwing when unset — a not-yet-mounted handle must not turn a completed mutation into a reported failure. Add a `tryNavigate(path)` beside `navigate(path)` in `handles.ts` for exactly this call site; keep the throwing variant for tools whose *entire job* is the navigation. add `setToastHandle`, `setDialogHandle`, `setQueryClientHandle`, etc. to `handles.ts` and set them all from the same in-tree component. One handles file keeps the whole pattern visible in one place.
 
 ### Server endpoints are app code too
 
@@ -407,6 +433,8 @@ registerResource({
 - **Don't clear-on-unmount between related views.** If navigating from one order page to another briefly tears down and rebuilds the same slice, the agent sees a `null` flash in between. Keep the slice populated across related transitions instead of blinking through empty.
 - **Remember most pushes during an agent action are echoes.** When the agent itself just acted, the resulting state change is something it already got in the return. The fewer resources you expose, the less echo the consumer has to suppress.
 
+- **Subscribe to the narrowest real change signal, not the whole store.** On every call to your `subscribe` callback, the extension re-reads `get()` and emits `resourceupdated` — it does not diff. So if you wire `subscribe` to a whole store that fires several times per operation (e.g. `setPending → setError → setCart → setPending`), or that fires on state outside your slice (loading/error/pending flags), each fire becomes an *echo* carrying an unchanged value, and the consumer's log fills with duplicates. Prefer a **selector subscription** so `onChange` runs only when your slice actually changes — Zustand's `store.subscribe(selectSlice, onChange)` via `subscribeWithSelector`, an RxJS `distinctUntilChanged`, a signal/`computed`, or your framework's equivalent. The example above already does this (`store.subscribe(s => s.cart, onChange)` fires only on the `cart` slice) — a bare `store.subscribe(onChange)` would not. If the store only offers a broad subscribe you can't narrow, expect echoes and dedupe downstream (the consumer-side pattern is in `edge-mcp-dev-panel`).
+
 ## 4. Safety annotations — writing the plan's levels as code
 
 **WebMCP never widens what's permitted.** Tools are allowlisted; the agent runs as the signed-in user; the app's existing auth, validation, and permissions all stay in the app. Annotations are how the connected vendor SDK commits each call carefully — not what makes the call permitted in the first place.
@@ -423,6 +451,8 @@ Two additional hints, set per the plan:
 
 - **`idempotentHint: true`** on a needs-confirmation tool whose underlying operation tolerates safe retries (e.g. via an idempotency key on the server).
 - **`untrustedContentHint: true`** on tools whose output may contain untrusted/third-party text the model should treat as untrusted.
+
+**A read tool that also drives the UI is reversible, not read-only.** When a browse/search tool navigates to what it found (the return + navigate hybrid the plan blesses), moving the screen is a visible side effect — the user's context changes even though no data mutates. Classify it **reversible** (`annotations: {}`), not read. Reserve `readOnlyHint: true` for tools that neither mutate data *nor* move the screen. If a formerly-silent read gains navigation during implementation, update its annotations in the same change — the level was assigned when the tool was silent.
 
 ```ts
 // src/edge-mcp/tools/orders-cancel.ts
@@ -447,6 +477,8 @@ Every tool in the `tools/` folder carries its `annotations` inline and registers
 ## 5. Schemas: required for input, derived from real types
 
 `inputSchema` is mandatory on every tool. **Derive schemas from the app's real types** (TypeScript types, JSDoc, Zod/Yup, OpenAPI) rather than hand-guessing them. Real types keep the schema honest — if the underlying type changes, the mismatch surfaces in development instead of confusing the agent at runtime. Hand-written schemas drift.
+
+**`document.modelContext` types are ambient.** `@napster-corp/edge-mcp` (since 1.4.0) ships a global `Document.modelContext` declaration, so tool files type-check as soon as the package is imported — do NOT write a local `declare global { interface Document { modelContext: … } }` shim. If the project has one from an earlier setup (a `webmcp.d.ts` or similar), delete it: it now conflicts with the shipped declaration.
 
 Tighten what the type alone can't express (a `string` that's really an enum, numeric bounds, `format` for emails/UUIDs/URLs), and redact sensitive fields from what `execute` returns.
 
