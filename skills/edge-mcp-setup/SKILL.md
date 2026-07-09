@@ -9,7 +9,7 @@ Agentify your website: give an AI agent the ability to operate your app the way 
 
 This skill is the **orchestrator**. It owns the journey and the conversation with the developer; each phase of the work is done by a specialist skill. Connecting an actual agent (Napster's Omniagent, or any other vendor that supports WebMCP) is a separate step handled by that vendor's own skills or SDK.
 
-**Two phases.** Phase one, one-time: set up Edge MCP in the app (steps 1–4 below). Phase two, ongoing: keep the tools in sync as the app changes (step 5). Both are required — step 5 is part of the setup, not optional.
+**Two phases.** Phase one, one-time: set up Edge MCP in the app (steps 1–4 below). Phase two, ongoing: keep the surface in sync as the app changes (step 5). Both are required — step 5 is part of the setup, not optional. Step 5 always writes a sync note into the repo (no key needed); the keyed automation on top is an opt-in.
 
 ## The flow
 
@@ -19,7 +19,7 @@ This skill is the **orchestrator**. It owns the journey and the conversation wit
 | 2 | BUILD the approved plan into the app | `edge-mcp-implement` |
 | 3 | TEST by hand (optional, persona-gated) | `edge-mcp-dev-panel` |
 | 4 | SIGN OFF with the developer | this skill (conversation) |
-| 5 | KEEP IN SYNC (ongoing, persona-routed) | rule, hook, or chat → `edge-mcp-sync` |
+| 5 | KEEP IN SYNC — write the note (always); offer the hook (opt-in) | this skill → `edge-mcp-sync` |
 | 6 | CLOSE THE LOOP — offer to deploy an agent | this skill (conversation) |
 
 Run the steps in order. Don't start step 2 without an approved plan, and don't sign off without step 2's runtime verification.
@@ -73,37 +73,55 @@ When you finish, present:
 - Whether the dev panel was installed (and where to toggle it if so).
 - The result of runtime verification.
 
-## 5. Offer to keep the tools in sync
+## 5. Keep the surface in sync
 
-The tool list is hand-curated and drifts as the app changes. There are three ways to keep it current — the agent rule, the git hook, or chat-driven re-sync — and the right one depends on **how this person works** and **which tool they're in**. Don't offer everything as equal options.
+The exposed surface — the tools the agent can DO and the live-state resources it can SEE — is hand-curated and drifts as the app changes. Keeping it in step is part of setup, not an afterthought. The **default** mechanism needs no key and no configuration: the agent that changes the app reconciles the surface as part of the same work (the `edge-mcp-sync` skill). What makes that survive across sessions is a short **note written into the repo**, so a future session — this one or another — knows sync is owed. The keyed automation is a narrow **opt-in** on top, for changes that never pass through an agent.
 
-**Check the prerequisite FIRST, before installing anything.** Both automated mechanisms (rule and hook) run `edge-mcp generate`, which needs an **`ANTHROPIC_API_KEY`** and `@anthropic-ai/claude-agent-sdk` available at generation time — a Napster API key does not work for this. Ask up front:
+### 5a. Always write the sync note (no key, no question)
 
-> "One thing first: the automated sync runs a background coding agent, which needs an Anthropic API key. Do you have one? If not, no problem — skip the automation and just ask me to re-check the tools whenever the app changes."
+Write the note every time — it's just a file edit. No "do you have an API key?" gate; the note works without one.
 
-**No key → chat-driven sync.** Nothing to install, nothing to configure: whenever the app's operations change, run the reconcile (the `edge-mcp-sync` skill) in conversation. Make that promise explicit and move on — don't install a mechanism that will fail on every run.
+**Where.** Write to whichever AI-instructions file(s) the project already uses — `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/`, `.github/copilot-instructions.md`. If none exist, create `AGENTS.md` (the neutral cross-tool default), plus `CLAUDE.md` when you're running as Claude Code.
 
-If they have a key, ask one routing question:
+**Idempotent.** Wrap the note in fences so it can be found and replaced, never duplicated:
 
-> "How do you usually work in this repo — do you commit with git yourself, or do you have me (the agent) make the changes and handle commits for you?"
+```
+<!-- >>> edge-mcp keep-in-sync >>> -->
+…note…
+<!-- <<< edge-mcp keep-in-sync <<< -->
+```
 
-Route on the answer. Don't offer both as equal options — pick the mechanism that matches their workflow.
+Before writing, check whether that block already exists in the file — **replace it in place if present, append only if absent.** Re-running setup must never stack duplicate notes.
 
-**If they do everything through the agent (never commit by hand) → install the agent rule (Claude Code only).**
+**The note** (substitute the real paths where THIS app's integration actually landed — the folder location varies per app, so don't hardcode `src/edge-mcp/`):
 
-A git post-commit hook is useless here — it fires on manual `git commit`, which never happens. The agent is the only thing that touches the code, so the trigger has to be a rule the agent obeys:
+> **## Keep the edge-mcp agent surface in sync**
+> This app exposes some of its real features to in-page AI agents via edge-mcp: things the agent can **DO** (tools, in `<tools folder>`) and things it can **SEE** (live state, in `<resources file>`). These must always match the app's real code.
+>
+> When you **add**, **change**, or **remove** a feature — a new operation, a renamed route, a removed action, new state the agent should see — reconcile the edge-mcp registration to match. Drift also creeps in from hand edits, teammates, and older commits, so don't assume the surface is current just because you didn't touch it this session: at natural points — while working on the app's features, or before wrapping up work here — give it a quick check and reconcile anything that's drifted. No need to re-check on every message.
+>
+> To sync: follow the `edge-mcp-sync` skill if you have it. Either way the task is the same — reconcile the edge-mcp registration against the app's real code, leave the changes uncommitted, and report what was added / updated / removed. (If the automated path is set up, `npx edge-mcp generate` does the same without a chat.)
 
-> "I'll install a standing rule so that whenever we change the app together, I re-check the exposed tools against the code and reconcile them for you — no git setup, nothing for you to run."
+Naming the skill **and** stating the plain-terms goal means a teammate or session without the skills plugin still knows what's owed and how. Once the note is written, chat-driven sync is live — nothing else is required.
 
-Run `npx edge-mcp install-rule` — it writes `.claude/rules/edge-mcp-sync.md` and adds a pointer to the repo's `CLAUDE.md`, which Claude Code reads on every session. **The rule is Claude-Code-specific** — other tools (Cursor, Codex, OpenCode) never read those files, so installing it there gives the developer false confidence that sync is handled. In a non-Claude-Code tool, use chat-driven sync instead (or the hook, if they also commit by hand). And don't mention git hooks, commit markers, or CI to an agent-only person — none of it applies.
+### 5b. Offer the automation — only for changes that land outside the agent
 
-**If they commit with git by hand (a developer working manually) → offer the git hook.** It works in any tool — git is universal.
+Everything above covers every change that flows through an agent. The one gap it can't cover is a change that never goes through a chat — a hand edit, a teammate's push, a CI job. Offer the automation **only** if that's a real scenario for this person; if all their changes go through you, skip it — a hook they don't need is noise.
 
-Their manual `git commit` is the natural trigger:
+Make one short offer that names the gap, the trigger, and the cost:
 
-> "Want a post-commit hook that keeps the exposed tools in sync? After each commit, it reruns `edge-mcp generate` to reconcile the app's edge-mcp `tools/` folder against the current code and reports what changed — leaving it uncommitted for you to review. Gated on an `[edge-mcp]` marker so it only fires when you want it."
+> "Optional: if changes ever land here without me — you edit a file by hand, a teammate pushes, or CI runs — I won't see them. There's a git hook that regenerates the surface automatically on any commit you tag `[edge-mcp]`. It needs a paid AI credential (an Anthropic API key, or a GitHub Copilot subscription — not a Napster key). Want it? Skip it if your changes always go through me."
 
-Run `npx edge-mcp install-hook` for the marker-gated `[edge-mcp]` post-commit hook. If they *also* drive changes through the agent, `npx edge-mcp install-rule` complements it (the rule covers agent-made changes, the hook covers hand-made commits) — offer it as a belt-and-suspenders, not a requirement.
+If they say yes, install it in the terminal:
+
+1. **Confirm it's a git repo** — the hook install requires one.
+2. **Put the chosen engine's credential + dependency in place:**
+   - **anthropic (default):** `ANTHROPIC_API_KEY` in the gitignored `.env.local` (or a CI secret), and `npm i -D @anthropic-ai/claude-agent-sdk`.
+   - **copilot:** `npm i -g @github/copilot`, sign in, and set `EDGE_MCP_ENGINE=copilot`.
+3. **Run `npx edge-mcp install-hook`** — the marker-gated `[edge-mcp]` post-commit hook.
+4. **Teach the trigger:** tag a commit `[edge-mcp]` to fire it; the regenerated files land **uncommitted** for review.
+
+Scope the promise honestly: `edge-mcp generate` reconciles **tools** on its own, but only **flags** resource (live-state) changes for you to handle in chat — unattended edits to the resources file are riskier, so it leaves them to a human. The chat path handles resources fully.
 
 The ongoing reconcile task itself is the `edge-mcp-sync` skill — the same task whether the automation runs it or you run it in chat.
 
