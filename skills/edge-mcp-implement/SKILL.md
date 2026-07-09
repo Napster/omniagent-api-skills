@@ -360,6 +360,7 @@ Two gotchas specific to this stack:
 
 - **`useNavigate` only works inside `<BrowserRouter>`.** Mounting `<EdgeMcpHandles />` outside the router (next to it instead of inside it) throws at render. Keep the handles component *inside* the router, above the routes.
 - **Post-mutation navigation should be best-effort.** When a mutating tool navigates *after* its real work succeeded (add to cart, then show the cart), call the handle through a variant that logs instead of throwing when unset — a not-yet-mounted handle must not turn a completed mutation into a reported failure. Add a `tryNavigate(path)` beside `navigate(path)` in `handles.ts` for exactly this call site; keep the throwing variant for tools whose *entire job* is the navigation. add `setToastHandle`, `setDialogHandle`, `setQueryClientHandle`, etc. to `handles.ts` and set them all from the same in-tree component. One handles file keeps the whole pattern visible in one place.
+- **A nav tool's return resolves before the screen settles — the return IS the confirmation.** `navigate(slug)` triggers a route change, but the router re-renders and the `currentPage` resource updates *after* the tool's promise has already resolved. So a consumer that navigates and then immediately reads `currentPage` to confirm gets the *previous* location — a stale read, not a bug in the tool. Two consequences for how you build and describe these tools: (1) a nav tool's `execute` should return a plain, confident confirmation (`'Navigated to the cart.'`) — that return is the agent's signal the nav was issued; (2) tell the consumer (in the tool's `description` or the hand-back notes) not to verify a just-issued nav by re-reading `currentPage`. If a tool genuinely must not resolve until the location has settled, have its `execute` await the app's own router-ready signal before returning — but the default and simplest contract is "the return confirms it," matching `edge-mcp-plan`'s `currentPage` caveat and §7's verify step.
 
 ### Server endpoints are app code too
 
@@ -451,6 +452,27 @@ Two additional hints, set per the plan:
 
 - **`idempotentHint: true`** on a needs-confirmation tool whose underlying operation tolerates safe retries (e.g. via an idempotency key on the server).
 - **`untrustedContentHint: true`** on tools whose output may contain untrusted/third-party text the model should treat as untrusted.
+
+**When a destructive tool is `idempotentHint: false`, offer to make it `true` — don't just flag it.** A tool tagged `idempotentHint: false` (e.g. a `placeOrder` with no server-side dedup) means a retry could double-charge or duplicate the action — but the annotation only *warns*; it doesn't fix anything. If the underlying endpoint accepts an idempotency key (many payment/order APIs do), thread a **client-generated key** through the tool so a retry dedups server-side, and then the tool honestly becomes `idempotentHint: true`. Generate the key once per intent (not once per call), so the automatic retry reuses it:
+
+```ts
+// src/edge-mcp/tools/checkout-place-order.ts
+export const tool = {
+  name: 'checkout.placeOrder',
+  description: 'Place the order for the current cart.',
+  inputSchema: { type: 'object', properties: {} },
+  annotations: { destructiveHint: true, idempotentHint: true }, // true BECAUSE of the key below
+  async execute() {
+    // One key per intent: same value across retries of this same placement, so
+    // the server collapses duplicates instead of charging twice.
+    const idempotencyKey = crypto.randomUUID();
+    const order = await api.placeOrder({ idempotencyKey }); // the app's real call, now dedup-safe
+    return { content: [{ type: 'text', text: `Order ${order.id} placed.` }] };
+  },
+};
+```
+
+If the endpoint has no such parameter, leave `idempotentHint: false` and say so in the hand-back — but check first; the fix is usually one argument. This is an implementation choice, so raise it with the developer rather than inventing a server contract that doesn't exist.
 
 **A read tool that also drives the UI is reversible, not read-only.** When a browse/search tool navigates to what it found (the return + navigate hybrid the plan blesses), moving the screen is a visible side effect — the user's context changes even though no data mutates. Classify it **reversible** (`annotations: {}`), not read. Reserve `readOnlyHint: true` for tools that neither mutate data *nor* move the screen. If a formerly-silent read gains navigation during implementation, update its annotations in the same change — the level was assigned when the tool was silent.
 
@@ -548,24 +570,22 @@ A successful TypeScript compile means the code parses and types check. It does *
 - An SSR boundary (the toolkit import ran on the server, where `document` is undefined, so nothing installed).
 - A `useRouter` hook returning `undefined` outside its provider.
 
-The five-minute runtime check catches all of these. **Run it before declaring done.** Who executes it depends on what you have available:
+The five-minute runtime check catches all of these. **Run it before declaring done.** The method is **one snippet pasted into the browser console** — nothing heavier. Do NOT reach for Playwright, a browser-automation MCP, or any other automation harness to verify a setup; it's disproportionate to the job and the paste-one-snippet path costs nothing and works everywhere. Paste the snippet yourself if you have console access; otherwise start the dev server and hand the developer the exact steps ("open localhost:3000, paste this into the console, tell me what it prints"). For someone new to Edge MCP this doubles as the first moment they *see* their app being operable — narrate what each result means.
 
-- **If you can drive a browser** (Playwright, a browser-automation MCP tool, or similar) — run the checks below yourself and capture the results.
-- **If you can't** — guide the developer through them: start the dev server for them, then hand them the exact steps ("open localhost:3000, paste this one line in the console, tell me what it prints"). For someone new to Edge MCP this doubles as the first moment they *see* their app being operable — narrate what each result means.
 - **If the developer explicitly wants to skip verification** — respect that, but say plainly what wasn't checked, and record the integration as **unverified** in your hand-back report. Never imply it was tested.
 
 The checks:
 
 1. Start the app the way the app itself starts (`npm run dev`, `yarn dev`, `pnpm dev`, or whatever its own scripts and README say) and load it in a browser.
 2. Open the browser console. Confirm you see the `[edge-mcp dev panel] mounted` log line if the dev panel was installed, or run `await document.modelContext.getTools()` to confirm the polyfill installed and the registry is populated. If it's empty, the registrations didn't run — investigate before going further.
-3. Invoke **at least one tool per safety level** you registered (read / reversible / needs-confirmation, if present). From the dev panel: open the panel (Cmd+Shift+E), expand the tool, fill its form, click Run. From DevTools, look the tool up and execute it through the standard surface:
+3. Invoke **at least one tool per safety level** you registered (read / reversible / needs-confirmation, if present). The fastest way is the **canned verifier snippet** — [`verify-snippet.js`](verify-snippet.js) in this skill folder — a ready-to-paste console script that reads `getTools()`, buckets tools by safety level, and fires one tool per tier, logging each result. Paste it as-is (it dry-runs by default; flip `RUN_WRITES` to also fire one reversible and one needs-confirmation tool). Or do it by hand from the dev panel (Cmd+Shift+E → expand the tool → fill its form → Run) or DevTools:
 
    ```js
    const tools = await document.modelContext.getTools();
    const tool = tools.find(t => t.name === 'cart.add');
    await document.modelContext.executeTool(tool, JSON.stringify({ productId: 'p1', qty: 1 }));
    ```
-4. Confirm for each: the returned `content` makes sense, the UI reacts appropriately (cart drawer slides open, page navigates, modal appears).
+4. Confirm for each: the returned `content` makes sense, the UI reacts appropriately (cart drawer slides open, page navigates, modal appears). **Verify a navigation by the tool's own return, not by re-reading `currentPage`/location** — a nav tool's promise resolves *before* the router re-renders, so reading the location right after returns the *previous* page (a real runtime race). The tool's return is the confirmation the nav was issued; trust it.
 5. If you registered resources: trigger a real out-of-band change (click a UI button, wait for an auto-updating resource to tick) and confirm the resource updates (the dev panel's RESOURCE log fires, or re-reading the resource's `get()` shows the new value).
 
 When all of these pass, report back — to the developer directly, or to the `edge-mcp-setup` sign-off when orchestrated — with: the path where the integration landed, the tool list with annotations, the resources registered (or "none, by design"), and **which tools you actually invoked at runtime and what reacted**. If verification was skipped, the report must say so explicitly ("runtime verification: skipped at the developer's request — recommend running it before connecting an agent") instead of claiming success.
