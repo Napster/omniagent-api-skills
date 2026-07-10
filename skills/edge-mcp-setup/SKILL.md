@@ -24,6 +24,14 @@ This skill is the **orchestrator**. It owns the journey and the conversation wit
 
 Run the steps in order. Don't start step 2 without an approved plan, and don't sign off without step 2's runtime verification.
 
+## 0. Set expectations — show the roadmap first
+
+**Before invoking any specialist skill, tell the developer how this is going to go.** Don't drop them into planning with no idea that there's a plan step, an approval step, a build step, a test step, and an ongoing-sync step ahead. Lay out the flow in plain terms and make the approval gate explicit up front, so the sequence — and the fact that *they* approve before anything gets built — is set from the start:
+
+> "Here's how this goes: **first we decide together** what the agent should be able to do and see, and I'll show you the plan for your approval. **Once you approve it, I build it** — register the tools against your real code. **Then we test** it in the browser, I hand it back for sign-off, and I leave a note so the surface stays in sync as your app changes. Optionally, I can put an actual agent on the site at the end. Nothing gets built until you've seen the plan and said go."
+
+Keep it to a few sentences — the point is that no step, especially the approval gate, is a surprise. Then proceed to step 1.
+
 ## 1. Decide — invoke `edge-mcp-plan`
 
 **Invoke the `edge-mcp-plan` skill before doing anything else.** It studies the app's real code deeply, proposes a starter plan — the high-value workflows, the tool list with safety levels, the resource list with out-of-band justifications, the deliberate withholds — and walks the developer through it until explicitly approved.
@@ -33,6 +41,8 @@ The initial setup happens once per app, but the surface it creates lives with th
 If the plan comes out at **zero** (the app has no real operations worth exposing), stop here — the planning skill explains that outcome to the developer; don't build scaffolding for no payoff.
 
 ## 2. Build — invoke `edge-mcp-implement`
+
+**Do not start this step until the developer has explicitly approved the plan.** The approval is a distinct, standalone yes — the developer answering the per-tool judgment questions during planning (does this navigate? include this tool?) is *not* approval, and must never be treated as it. If you can't point to a plain "yes, build it" (or equivalent), planning isn't done — go back to `edge-mcp-plan` and get it. This is the gate the whole flow hangs on; skipping it is the failure mode this skill exists to prevent.
 
 With the approved plan in hand, **invoke the `edge-mcp-implement` skill.** It installs `@napster-corp/edge-mcp` (or the script-tag build for no-build sites), lays out the integration adapted to the app's actual stack, registers the plan's tools and live-state resources against the app's real code, and runs the **required runtime verification** — invoking real tools in a real browser, not just compiling.
 

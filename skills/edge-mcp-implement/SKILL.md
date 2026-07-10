@@ -9,6 +9,8 @@ Turn an approved Edge MCP plan into working code: install `@napster-corp/edge-mc
 
 **Prerequisite: an approved plan.** This skill implements decisions; it does not make them. If there is no approved plan from `edge-mcp-plan` (the tool list with safety levels, the resource list with gate justifications, the withholds), stop and run that skill first. Everything below assumes the plan exists — never add tools or resources beyond it, and if implementation reveals a problem with the plan, go back to the developer instead of silently deviating.
 
+**Hard rule — do not write or modify a single file until the developer has explicitly approved the plan.** Not a green light inferred from them answering a design question ("yes, cart writes should navigate"), not "looks good?" going unchallenged — an actual, standalone "yes, build it" (or equivalent). If you cannot point to that explicit go-ahead, **stop here and get it** (that's `edge-mcp-plan`'s closing approval step). Answering the planning questions is not approval. This is the single most important gate in the whole flow; a past run skipped it by treating answered clarifying questions as consent and wrote 25 tool files before anyone said go. Do not repeat that.
+
 **Sections 2–6 are the specification for what you build in section 1.** Read them before writing files, not after.
 
 ## 1. Install the package and wire the integration
@@ -16,6 +18,8 @@ Turn an approved Edge MCP plan into working code: install `@napster-corp/edge-mc
 ```bash
 npm install @napster-corp/edge-mcp
 ```
+
+**If npm reports removing dozens of packages or flags vulnerabilities, that's the app's own tree, not edge-mcp.** Edge MCP itself is small — the package plus one runtime dependency (`@cfworker/json-schema`, its schema validator). It pulls in nothing else at install time. When `npm install` prints lines like "removed 66 packages" or "2 vulnerabilities (1 high)", that's npm reconciling and auditing the app's *existing* dependency tree while it rewrites the lockfile — it's not something Edge MCP added. (The one optional peer, `@anthropic-ai/claude-agent-sdk`, is only needed if the developer later opts into the git-hook automation, and is never installed by this step.) Say this plainly if the developer is alarmed, rather than letting the noise erode trust.
 
 Importing the package is a browser-only side effect: it polyfills the WebMCP standard so `document.modelContext` exists, and installs a live-state resource extension on it.
 
@@ -500,7 +504,7 @@ Every tool in the `tools/` folder carries its `annotations` inline and registers
 
 `inputSchema` is mandatory on every tool. **Derive schemas from the app's real types** (TypeScript types, JSDoc, Zod/Yup, OpenAPI) rather than hand-guessing them. Real types keep the schema honest — if the underlying type changes, the mismatch surfaces in development instead of confusing the agent at runtime. Hand-written schemas drift.
 
-**`document.modelContext` types are ambient.** `@napster-corp/edge-mcp` (since 1.4.0) ships a global `Document.modelContext` declaration, so tool files type-check as soon as the package is imported — do NOT write a local `declare global { interface Document { modelContext: … } }` shim. If the project has one from an earlier setup (a `webmcp.d.ts` or similar), delete it: it now conflicts with the shipped declaration.
+**`document.modelContext` types are ambient.** `@napster-corp/edge-mcp` ships a global `Document.modelContext` declaration, so tool files type-check as soon as the package is imported — do NOT write a local `declare global { interface Document { modelContext: … } }` shim. If the project has one from an earlier setup (a `webmcp.d.ts` or similar), delete it: it now conflicts with the shipped declaration.
 
 Tighten what the type alone can't express (a `string` that's really an enum, numeric bounds, `format` for emails/UUIDs/URLs), and redact sensitive fields from what `execute` returns.
 
@@ -585,6 +589,19 @@ The checks:
    const tool = tools.find(t => t.name === 'cart.add');
    await document.modelContext.executeTool(tool, JSON.stringify({ productId: 'p1', qty: 1 }));
    ```
+
+   **Two contract quirks bite every consumer that reads these results — use these canonical one-liners instead of re-inventing a parse each time.** `getTools()` returns each tool's `inputSchema` as a JSON **string** (Chromium's native contract, matched by the polyfill), and `executeTool` resolves with the standard envelope as a JSON string. Parse and unwrap defensively:
+
+   ```js
+   // inputSchema is a JSON string on the wire — parse before use; tolerate an object from foreign surfaces.
+   const schema = typeof tool.inputSchema === 'string' ? JSON.parse(tool.inputSchema) : (tool.inputSchema ?? {});
+
+   // executeTool resolves with JSON.stringify({ content: [{ type, text }] }), or null if execute returned undefined.
+   const raw = await document.modelContext.executeTool(tool, JSON.stringify(args)); // may throw on unknown tool / validation
+   const text = raw == null ? '(no output)' : JSON.parse(raw).content?.[0]?.text ?? raw;
+   ```
+
+   The `edge-mcp-dev-panel` skill (§"`inputSchema` comes back as a JSON string" and §"`executeTool` resolves with the envelope") is the canonical home for both — reach for the same shape anywhere you consume the surface by hand, rather than writing a fresh `JSON.parse` per call site.
 4. Confirm for each: the returned `content` makes sense, the UI reacts appropriately (cart drawer slides open, page navigates, modal appears). **Verify a navigation by the tool's own return, not by re-reading `currentPage`/location** — a nav tool's promise resolves *before* the router re-renders, so reading the location right after returns the *previous* page (a real runtime race). The tool's return is the confirmation the nav was issued; trust it.
 5. If you registered resources: trigger a real out-of-band change (click a UI button, wait for an auto-updating resource to tick) and confirm the resource updates (the dev panel's RESOURCE log fires, or re-reading the resource's `get()` shows the new value).
 

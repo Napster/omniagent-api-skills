@@ -171,7 +171,15 @@ The first pass is a draft. Be prepared to revise:
 - Add capabilities you missed.
 - Move items between the expose list and the withhold list as the conversation refines them.
 
-Don't move on until the developer explicitly says the plan is good to go. The whole point is that they own the decision; rushing approval defeats the purpose.
+### End with one explicit approval gate — separate from the planning questions
+
+The judgment questions you asked while building the plan (does `cart.add` navigate? include `compareSet`? is this destructive?) are **planning**, not approval. Answering them does not mean the developer approved the plan — conflating the two is exactly how a past run jumped straight into writing code the moment the developer answered a design question. Keep the two clearly apart.
+
+So when the plan is done, stop and make one **standalone approval step** whose only job is to get a yes or no. Not buried in a design question, not "looks good?" in passing — a clean, separate ask:
+
+> "That's the full plan — I'm done planning. Here's what it exposes: [the tool table, the resources, the withholds]. **Are you OK with this, or do you want changes?**"
+
+Then wait. Revise and re-ask if they want changes; only a plain, explicit go-ahead ("yes", "build it", "go") counts. Until you have that, the plan is not approved and `edge-mcp-implement` must not build. The whole point is that the developer owns the decision; rushing approval, or reading an answered design question as approval, defeats the purpose.
 
 ## 7. Hand off
 
