@@ -124,6 +124,8 @@ holdButton.addEventListener('pointercancel', () => station.pushToTalk(false));
 - `setVolume(volume)` — clamped to 0..1.
 - `stopTalking()` — interrupts the avatar mid-sentence (barge-in); wire it to a visible "stop" tap if the design calls for one.
 
+For staff, mount the SDK's built-in operator panel instead of building these controls yourself: `settings: true` in `init()` (or `station.mountSettings({ corner })`) adds a low-opacity gear — station mode only, shadow-DOM isolated — with volume, mute, Start host, and Reload station. Volume and mute persist to `station_{appKey}_volume|muted` and re-apply on mount. Guests should never need it; it exists so venue staff can adjust the device without a keyboard.
+
 ## 7. The output rules, from the tool author's side
 
 Tools built per `edge-mcp-implement` are already station-compatible — return the standard `{ content: [{ type: 'text', text }] }` envelope and the SDK handles the rest. What the avatar receives for each return shape:
