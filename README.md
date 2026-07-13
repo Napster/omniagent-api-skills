@@ -171,7 +171,8 @@ omniagent-api-skills/
 ├── .mcp.json                           Napster docs MCP server (source of truth for API details)
 ├── .cursor/ .vscode/                   MCP config for cross-tool use
 ├── commands/
-│   └── omniagent-quickstart.md         The guided end-to-end wizard
+│   ├── omniagent-quickstart.md         The guided end-to-end wizard
+│   └── station-quickstart.md           The guided kiosk-conversion wizard
 ├── skills/
 │   ├── setup-api-key/                  Get an API key, store it as NAPSTER_API_KEY
 │   ├── create-persona/                 Create the appearance + personality entity
@@ -189,6 +190,11 @@ omniagent-api-skills/
 │   ├── edge-mcp-implement/             Build the approved plan — register tools + live state, verify at runtime
 │   ├── edge-mcp-dev-panel/             Dev-only panel to test your website's agent tools by hand
 │   ├── edge-mcp-sync/                  Keep your website's agent tools in sync as your app changes
+│   ├── station-convert/                Run your website on a Napster station kiosk — the orchestrator
+│   ├── station-integrate/              Wire @napster-corp/station-sdk into the site
+│   ├── station-kiosk-ux/               Harden the page for a public portrait touchscreen
+│   ├── station-provision/              Register functions, agent + kiosk channel, .napster device file
+│   ├── station-verify/                 Prove it works — local harness pass, then on-device
 │   └── troubleshoot-omniagent/         The pitfall index, organized by area
 └── assets/
     ├── omniagent-ui.css                Canonical panel styles (framework-agnostic)
