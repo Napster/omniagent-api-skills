@@ -23,7 +23,7 @@ curl https://companion-api.napster.com/public/agents/agent_abc123 \
 
 ## Update an agent
 
-`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `tags`, `disableIdleTimeout`. Changes apply to every channel using the agent.
+`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`. Changes apply to every channel using the agent.
 
 ```bash
 curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
@@ -63,7 +63,7 @@ curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
-Deleting an agent removes it for **all** channels — WebRTC, WebSocket, and SIP.
+Deleting an agent removes it for **all** channels — WebRTC, WebSocket, VoIP, SIP, and Kiosk.
 
 ## Channel configs vs. the agent
 
@@ -79,7 +79,7 @@ curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123/chan
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
-Use this when you want to stop overriding behavior on one channel — or take the agent off the phone — while keeping the agent live elsewhere. Channel types: `webrtc`, `websocket`, `voip`, `sip`.
+Use this when you want to stop overriding behavior on one channel — or take the agent off the phone — while keeping the agent live elsewhere. Channel types: `webrtc`, `websocket`, `voip`, `sip`, `kiosk`.
 
 ## Common errors
 

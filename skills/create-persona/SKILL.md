@@ -80,12 +80,27 @@ print(res.json()["id"])  # comp_…
 | `description` | string | Yes | Role, personality, tone, communication style. Becomes the agent's base system prompt. |
 | `firstName` | string | No | First name. |
 | `lastName` | string | No | Last name. |
-| `pictureUrl` | string | No | Publicly reachable image URL used to generate the avatar. |
+| `pictureUrl` | string | No | Publicly reachable image URL used to generate the avatar (the `v1` input). |
+| `videoUrl` | string | No | Reference video of a person speaking — the `v2` input. Produces the best lip sync and expressions. |
+| `version` | string | No | Avatar model: `v1` (default) or `v2`. See below. |
 | `gender` | string | No | `male`, `female`, or `nonBinary`. |
 | `ethnicity` | string | No | A value from `GET /public/companions/ethnicities`. |
 | `tags` | object | No | String key-value labels. |
 
 A `headline` (short tagline, e.g. "Senior Tech Support Specialist") is set after creation with `PATCH /public/companions/{companionId}`.
+
+### Avatar model — v1 vs v2
+
+`version` picks the avatar rendering model:
+
+- **`v1`** (default) — generated from a still image (`pictureUrl`, or auto-generated from the description). Fast, good quality.
+- **`v2`** — higher quality with the best lip sync, natural expressions, and cleaner facial hair. Give it a `videoUrl` (a reference video) for the best result, though it also accepts a `pictureUrl`. v2 generation can take significantly longer.
+
+Use v2 for customer-facing avatars where realism matters; v1 when speed is more important. For the full comparison, check the docs (`building-your-omniagent/avatar-models`).
+
+<Callout type="info">
+Building a persona of a **real person** — their actual likeness and voice? That's a **digital twin**, a different creation path. See [[create-digital-twin]].
+</Callout>
 
 ### Image hosting
 
@@ -140,6 +155,7 @@ Don't block your whole flow on `completed` if you only need to use the persona �
 
 ## Next steps
 
+- Build a persona from a **real person** (likeness + voice): [[create-digital-twin]].
 - Assemble a deployable agent from this persona: [[create-agent]].
 - Add actions the agent can take: [[create-tool]].
 - Ground it in your content: [[add-knowledge]].

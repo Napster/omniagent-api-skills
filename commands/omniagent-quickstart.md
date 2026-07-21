@@ -18,8 +18,10 @@ Ask first, in plain terms, and **remember the answer for Step 7**:
 
 > Where do you want people to talk to your agent?
 > - **On my website** — visitors see and talk to the agent right on the page, with voice and video (this uses WebRTC).
-> - **Voice only, in my own app** — just audio, no video, wired into your own client or backend (this uses WebSockets).
-> - **Over the phone** — you give it a phone number, and the agent picks up when someone calls. This can run over VoIP or SIP; VoIP is usually the easier route (no trunk of your own to manage), but it depends on what you want — if you already run a SIP trunk, that path is open too.
+> - **Voice only, in my own app** — just audio, no video, wired into your own client or backend (this uses WebSocket).
+> - **Text only** — a typed chat, no voice and no avatar, like a chatbot (this uses WebSocket with the text modality).
+> - **Over the phone** — you give it a phone number, and the agent picks up when someone calls. This can run over VoIP or SIP; VoIP is usually the easier route (no SIP trunk of your own to manage) — if you already run a SIP trunk, that path is open too.
+> - **In person, on a Napster Station** — a physical walk-up kiosk (lobby, retail, event). Gated hardware, set up with Napster.
 > - **More than one** — tell me which.
 
 Capture the selection. Match their plain-language answer to the right channel — don't make them know the protocol names. Do not set up channels they didn't ask for.
@@ -49,8 +51,10 @@ Ask whether the agent should answer from their documents or curated FAQs. If yes
 Deploy **only** to the channel(s) chosen in Step 1:
 
 - Web → [[deploy-webrtc]]
-- Audio-only → [[deploy-websocket]]
+- Voice only → [[deploy-websocket]] (audio modality — the default)
+- Text only → [[deploy-websocket]] with `modality: "text"`
 - Phone → [[deploy-phone]] — **default to VoIP**: configure the `voip` channel, take the `voipEndpoint` Napster returns, and register it as the incoming-call webhook at the developer's VoIP-capable provider. Napster only exposes the webhook; the provider owns the number and routes the call. Use SIP only if the developer explicitly wants to bring their own trunk.
+- In-person (Napster Station) → [[deploy-kiosk]] — gated; the channel config is set via the API but pairing the Station and deploying the experience happens with Napster.
 
 If they chose multiple, run each matching skill in turn. **Do not deploy to channels they didn't choose.** If Step 1's answer is missing or unclear, ask now: "Where do you want people to talk to your agent?"
 
