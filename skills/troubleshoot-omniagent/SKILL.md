@@ -52,12 +52,12 @@ Prevention: [[deploy-webrtc]], [[session-runtime]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Socket refused / `401` | Auth not sent | Header `Authorization: Bearer <authToken>` (server) or `?token=` (browser) |
-| Decode/`atob` throws | Used token raw | Base64-decode to `{ url, authToken }` first |
+| Socket refused / `401` | Token dropped or duplicated | Connect to the decoded `url` as-is — the token is already embedded; don't append a second `?token=` |
+| Decode/`atob` throws | Used token raw | Base64-decode to `{ url, token, connection, expiresAt }` first |
 | Silence or garbled audio | Wrong audio format | PCM16, 16 kHz, mono, base64 in both directions |
 | Agent interrupts itself constantly | No echo cancellation | `getUserMedia({ audio: { echoCancellation: true } })` |
 | Agent won't stop on barge-in | Buffered audio not cleared | Flush playback on `speech_started` |
-| Can't set socket headers in browser | Browser WebSocket limitation | Pass auth as `?token=` query param |
+| Can't set socket headers in browser | Browser WebSocket can't send an `Authorization` header | You don't need one — the token is already embedded in the decoded `url`; connect to `url` as-is |
 
 Prevention: [[deploy-websocket]].
 
@@ -103,7 +103,8 @@ Prevention: [[add-knowledge]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Agent doesn't greet | No auto-greeting | Send the greeting nudge on ready ([[session-runtime]]) |
+| `400` when creating a connection | Invalid session settings — unsupported `voiceId`, bad provider creds, or companion not ready | Read the error; fix the setting and reconnect. Invalid settings are rejected at **connect**, not at agent creation ([[create-agent]]) |
+| Agent doesn't greet | No auto-greeting | Set `initialSpeech` on the connection, or send the greeting nudge on ready ([[session-runtime]]) |
 | Memory not recalled | Missing/changing `externalClientId` | Stable ID matching `^[A-Za-z0-9_-]{1,32}$` |
 | `externalClientId` rejected | Doesn't match the regex | Hash UUIDs/emails to ≤32 allowed chars |
 | Session closes unexpectedly | Idle timeout | Set `disableIdleTimeout` or keep traffic flowing |

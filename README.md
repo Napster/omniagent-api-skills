@@ -175,13 +175,15 @@ omniagent-api-skills/
 ├── skills/
 │   ├── setup-api-key/                  Get an API key, store it as NAPSTER_API_KEY
 │   ├── create-persona/                 Create the appearance + personality entity
+│   ├── create-digital-twin/            Persona from a real person — likeness + voice
 │   ├── create-agent/                   Assemble a deployable Omniagent from a persona
 │   ├── manage-agents/                  List, update, delete Omniagents
 │   ├── create-tool/                    Define a function the agent can call mid-conversation
 │   ├── add-knowledge/                  Upload files, define FAQs, attach to an agent
 │   ├── deploy-webrtc/                  Web channel: browser audio + video via the Web SDK
-│   ├── deploy-websocket/              Audio-only channel for headless/custom clients
+│   ├── deploy-websocket/              Audio or text channel for headless/custom clients
 │   ├── deploy-phone/                   Phone channel — a number the agent answers (VoIP or SIP)
+│   ├── deploy-kiosk/                   In-person channel — a Napster Station (gated)
 │   ├── session-runtime/                Per-session config, server events, client commands
 │   ├── monitor-sessions/               List sessions, pull transcripts
 │   ├── edge-mcp-setup/                 Agentify your website — the orchestrator that runs the four skills below
@@ -210,8 +212,9 @@ The default panel includes a small `Powered by Napster` footer that links to the
 | Term | What it is | API resource |
 |---|---|---|
 | **Omniagent** | The deployed agent — one identity across every channel | `/public/agents` |
-| **Persona** | Appearance + personality (voice is set on the agent) | `/public/companions` |
+| **Persona** | Appearance + personality (voice is set on the agent); a **digital twin** is a persona built from a real person | `/public/companions`, `/public/digital-twins` |
 | **Function** | A callable tool the agent invokes mid-conversation | `/public/functions` |
 | **Knowledge base / FAQ** | Documents and curated Q&A the agent grounds answers in | `/public/knowledge-bases`, `/public/faqs` |
-| **Channel** | The surface a session runs on: WebRTC, WebSocket, Phone (VoIP or SIP) | per-session connections + `/channels/{type}` |
-| **Session** | One conversation, with its transcript and config | `/public/sessions` |
+| **Channel** | The surface a session runs on: WebRTC, WebSocket, Phone (VoIP or SIP), Kiosk | per-session connections + `/channels/{type}` |
+| **Modality** | Whether the conversation is audio, text, or video — set per connection (text is WebSocket-only) | `modality` on the connection |
+| **Session** | One conversation, with its transcript, cost, and config | `/public/sessions` |

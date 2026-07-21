@@ -12,7 +12,7 @@ Creating the agent does not make it reachable. End users reach it only after you
 ## Prerequisites
 
 - A persona ID (`companionId`). If you don't have one, route to [[create-persona]].
-- A voice ID. Required. **Don't hardcode or guess the list — it changes.** Fetch the current supported voices from the docs before choosing one: the docs MCP server `fetch-page` slug `building-your-omniagent/configuration` (the Voice section), or `get-overview`. The examples below use a placeholder value; substitute a voice from that list. Note: an invalid voice is **not** rejected when you create the agent — the call succeeds and the failure only surfaces when a session starts (e.g. an error on the WebRTC data channel), so get the voice right up front.
+- A voice ID. Required. **Don't hardcode or guess the list — it changes.** Fetch the current supported voices from the docs before choosing one: the docs MCP server `fetch-page` slug `building-your-omniagent/configuration` (the Voice section), or `get-overview`. The examples below use a placeholder value; substitute a voice from that list. Note: an invalid voice is **not** rejected when you create the agent — `POST /public/agents` succeeds regardless. It's caught later, when you open a connection: that call now returns a `400` with a descriptive reason (an unsupported `voiceId`, malformed provider credentials, or a companion that isn't ready). Get the voice right up front so the connection isn't rejected.
 - Optionally: tool IDs ([[create-tool]]), a knowledge base ID and/or FAQ collection IDs ([[add-knowledge]]).
 
 ## Create the agent
@@ -89,6 +89,7 @@ print(res.json()["id"])  # agent_…
 | `faqCollections` | string[] | No | FAQ collection IDs. See [[add-knowledge]]. |
 | `knowledgeBaseId` | string | No | Knowledge collection ID. See [[add-knowledge]]. |
 | `disableIdleTimeout` | boolean | No | Keep sessions open indefinitely instead of auto-closing on idle. |
+| `useWebSearch` | boolean | No | Let the agent search the web during conversations. Defaults to `true`; set `false` to keep it to its provided knowledge only. |
 | `tags` | object | No | String key-value labels, returned on every session for filtering. |
 
 ### Provider settings
@@ -115,8 +116,9 @@ If the agent still interrupts itself, raise `threshold` toward `0.95` or `silenc
 The agent exists but isn't reachable. Pick a channel:
 
 - **Web (audio + video in a browser):** [[deploy-webrtc]]
-- **Audio-only (headless / custom client):** [[deploy-websocket]]
+- **Audio or text (headless / custom client, over WebSocket):** [[deploy-websocket]]
 - **Phone (a number the agent answers, via VoIP or SIP):** [[deploy-phone]]
+- **In-person on a Napster Station (gated):** [[deploy-kiosk]]
 
 The same agent serves all channels at once — deploy to one now, add more later.
 
@@ -124,7 +126,7 @@ The same agent serves all channels at once — deploy to one now, add more later
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Session fails at connect (e.g. an error on the WebRTC data channel) though `POST /public/agents` succeeded | Invalid `voiceId` — it is **not** validated when the agent is created | Set a supported voice from the docs (`building-your-omniagent/configuration`) and update the agent; the bad value only fails at runtime |
+| `400` when opening a connection (unsupported `voiceId`, bad provider creds, companion not ready) | Invalid settings are **not** validated at agent creation — only when a connection is created | Fix the flagged setting (e.g. a supported voice from `building-your-omniagent/configuration`), update the agent, then reconnect |
 | `400` missing `providerSettings` | Field omitted | Required — send `{}` to accept defaults |
 | Agent ignores attached tool | Tool ID not in `functions` | Add the ID; creating a tool does not auto-attach it ([[create-tool]]) |
 | Knowledge not used | Wrong/empty `knowledgeBaseId` or provider mismatch | One collection per session; provider must match ([[add-knowledge]]) |

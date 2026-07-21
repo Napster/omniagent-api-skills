@@ -52,12 +52,14 @@ curl -X POST https://companion-api.napster.com/public/agents/agent_abc123/connec
     "channelType": "webrtc",
     "externalClientId": "user_12345",
     "externalClientProfile": { "name": "Jane", "plan": "premium" },
+    "initialSpeech": "Greet the user warmly, introduce yourself, and ask what they need help with.",
     "tags": { "environment": "production" }
   }'
 ```
 
 - **`externalClientId`** enables cross-session **memory**, scoped to persona + client ID. Same ID + same persona recalls past conversations. Must match `^[A-Za-z0-9_-]{1,32}$` — hash UUIDs/emails down to that format.
 - **`externalClientProfile`** is free-form structured context the agent can use to personalize (name, plan, company, …).
+- **`initialSpeech`** tells the agent how to open the session before the user speaks — an *instruction* it follows in its own voice, not a verbatim line to read. This is the server-side alternative to the greeting nudge below. It's also settable on the channel config (`PUT /public/agents/{id}/channels/{type}`) to default it for every session on a channel.
 - **`tags`** label the session for filtering in [[monitor-sessions]].
 
 ## Server events
@@ -68,9 +70,9 @@ Pass an `onData` callback (WebRTC) or read socket messages (WebSocket). The core
 |---|---|
 | `avatar_state_changed` | Readiness changed (`preparing` → `ready`). |
 | `talk_state_changed` | Agent speech (`preparing` → `started` → `ended`). |
-| `message_received` | Conversation lifecycle; a `data.action` field marks the stage. |
+| `message_received` | Conversation lifecycle; fields nest under `data.message`, and `data.message.action` marks the stage. |
 
-`message_received` carries `role` (`user`/`assistant`), `action`, `content`, `item_id`, `response_id`, `timestamp`, and more. Useful actions: user `completed` (final transcription in `content`), assistant `delta` (incremental text), assistant `completed` (full response), `cancelled` (with `reason`, e.g. `turn_detected` on barge-in), `failed` (with `error`).
+`message_received` fields are nested under **`data.message`**. This holds on **both** transports; over WebRTC the Web SDK delivers the event as-is. `data.message` carries `role` (`user`/`assistant`), `action`, `content`, `item_id`, `response_id`, `timestamp`, a `type` (`"message"` or `"session"`), and more (`tokens`, `is_forced`, `content_index`). The **first** frame is a session marker (`type: "session"`, no `role`/`content`) — skip any frame where `data.message.type === "session"`. Useful actions: user `completed` (final transcription in `content`), assistant `delta` (incremental text), assistant `completed` (full response), `cancelled` (with `reason`, e.g. `turn_detected` on barge-in), `failed` (with `error`).
 
 ```js
 function handleData(msg) {
@@ -78,11 +80,14 @@ function handleData(msg) {
     case "talk_state_changed":
       // drive a speaking indicator
       break;
-    case "message_received":
-      if (msg.data.role === "assistant" && msg.data.action === "completed") {
-        renderTranscript(msg.data.content);
+    case "message_received": {
+      const m = msg.data.message;              // fields are nested under data.message
+      if (!m || m.type === "session") break;   // first frame is a session marker — skip it
+      if (m.role === "assistant" && m.action === "completed") {
+        renderTranscript(m.content);
       }
       break;
+    }
   }
 }
 ```
@@ -121,7 +126,7 @@ instance.sendCommand({
 
 ## The greeting nudge
 
-The agent doesn't always auto-greet on connect. Force a clean opening once it's ready (WebRTC, in `onAvatarReady` or after `avatar_state_changed: ready`):
+The agent doesn't always auto-greet on connect. Two ways to get a clean opening: set `initialSpeech` on the connection (above) so the server opens the conversation, or — for full client-side control of timing — force it once the session is ready (WebRTC, in `onAvatarReady` or after `avatar_state_changed: ready`):
 
 ```js
 instance.sendCommand({

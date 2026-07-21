@@ -18,7 +18,9 @@ curl "https://companion-api.napster.com/public/sessions?pageSize=10" \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
-Each item includes `id`, `companionId` (+ `companion`), `functions`, `knowledgeBaseId`, `faqIds`, `externalClientId`, `tags`, `sessionType` (`webrtc`/`websocket`/sip), `status`, `closeReason`, and timestamps (`createdAt`, `startedAt`, `closedAt`). The envelope has `items`, `filteredCount`, `totalCount`, `pageIndex`, `pageSize`.
+Each item includes `id`, `companionId` (+ `companion`), `functions`, `knowledgeBaseId`, `faqIds`, `externalClientId`, `tags`, `sessionType` (`webrtc`/`websocket`/`voip`/`sip`/`kiosk`), `modality` (`audio`/`text`/`video`), `status`, `closeReason`, `cost`, and timestamps (`createdAt`, `startedAt`, `closedAt`). The envelope has `items`, `filteredCount`, `totalCount`, `pageIndex`, `pageSize`.
+
+`cost` is the billed cost of the session in **USD** — computed from the minutes the agent was active and your API key's model configuration. It is `null` while the session is `pending` or `started`, and is populated once the session closes. Sum `cost` across a filtered list (by `companionId` or `externalClientId`) to attribute spend per persona or per end user.
 
 ### Filters
 
@@ -67,8 +69,10 @@ Adds `conversation.items` — each message in chronological order with `role` (`
 {
   "id": "sess_abc123",
   "sessionType": "webrtc",
+  "modality": "audio",
   "status": "closed",
   "closeReason": "idle_timeout",
+  "cost": 0.42,
   "conversation": {
     "items": [
       { "role": "agent", "text": "Hi there! How can I help?", "timestamp": 1710000006 },
