@@ -68,7 +68,7 @@ Pass an `onData` callback (WebRTC) or read socket messages (WebSocket). The core
 
 | Event | Meaning |
 |---|---|
-| `avatar_state_changed` | Readiness changed (`preparing` → `ready`). |
+| `avatar_state_changed` | Readiness changed (`preparing` → `ready`). `ready` can REPEAT: on WebRTC with `videoPolicy: "deferred"` it fires at audio-ready (`data.details.mode: "audio_only"`) and again at video-ready (`"audio_video"`). Latch it — run session-start logic once. |
 | `talk_state_changed` | Agent speech (`preparing` → `started` → `ended`). |
 | `message_received` | Conversation lifecycle; fields nest under `data.message`, and `data.message.action` marks the stage. |
 
@@ -126,7 +126,7 @@ instance.sendCommand({
 
 ## The greeting nudge
 
-The agent doesn't always auto-greet on connect. Two ways to get a clean opening: set `initialSpeech` on the connection (above) so the server opens the conversation, or — for full client-side control of timing — force it once the session is ready (WebRTC, in `onAvatarReady` or after `avatar_state_changed: ready`):
+The agent doesn't always auto-greet on connect. Two ways to get a clean opening: set `initialSpeech` on the connection (above) so the server opens the conversation, or — for full client-side control of timing — force it once the session is ready. On WebRTC, do this in `onAvatarReady` (fires exactly once). If you key off `avatar_state_changed: ready` instead, LATCH it — with `videoPolicy: "deferred"` the session emits `ready` twice (audio first, then video), and an unlatched handler greets twice:
 
 ```js
 instance.sendCommand({
