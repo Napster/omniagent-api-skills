@@ -235,7 +235,20 @@ The iframe must grant the permissions the SDK uses, or the mic preflight fails e
 <iframe src="…" allow="microphone; camera; autoplay"></iframe>
 ```
 
-## 5. (Optional) Green-screen background for compositing
+## 5. (Optional) Faster start with `videoPolicy: "deferred"`
+
+By default (`videoPolicy: "required"`) the session becomes ready only when audio and video are both up — one `avatar_state_changed: ready`. Set `"deferred"` on the WebRTC channel config to let the conversation start on audio first, with the video avatar coming up moments later:
+
+```bash
+curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/webrtc \
+  -H "X-Api-Key: $NAPSTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "videoPolicy": "deferred" }'
+```
+
+WebRTC-only (WebSocket sessions have no video). **Contract change:** under `"deferred"` the session emits `ready` TWICE — first with `details: { mode: "audio_only" }`, again with `details: { mode: "audio_video" }` when video is up. Any handler keyed on `avatar_state_changed: ready` must latch (run once); `onAvatarReady` is unaffected (fires once, at video render — which under `"deferred"` is after the conversation is already live). See [[session-runtime]] for the event handling.
+
+## 6. (Optional) Green-screen background for compositing
 
 Skip this unless you need to composite the agent over your own UI (no backdrop, the person "floating" on the page). The default `avatarStyle.view: "rectangle"` already works for the standard embedded panel above; only switch to silhouette if you need to chroma-key the avatar yourself.
 
@@ -263,7 +276,7 @@ await NapsterCompanionApiSdk.init(token, {
 
 The two settings have to be in sync. If the server sends a green-screened stream but the SDK isn't using `silhouette`, the chroma color shows through; if the SDK is in `silhouette` but the server isn't sending the green stream, there's nothing to key out.
 
-## 6. Production
+## 7. Production
 
 The local token server is a prototype. Before shipping, port `/token` into your backend with: per-user **authentication**, **rate limiting**, and per-session context (`externalClientId` / `externalClientProfile`) resolved from the signed-in user. The browser's `fetch('/token')` line doesn't change. The API key never reaches the browser.
 
