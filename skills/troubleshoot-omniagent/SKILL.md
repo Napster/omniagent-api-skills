@@ -95,6 +95,7 @@ Prevention: [[create-tool]], [[session-runtime]].
 |---|---|---|
 | File never processes | URL not publicly reachable | Host on public HTTPS |
 | Upload rejected | Unsupported type / over size limit | Check supported formats and limits |
+| Can't add more files to a collection | At the 30-file per-collection limit | Delete unused files or merge documents ([[add-knowledge]]) |
 | FAQ answer not returned | User's wording too far from the FAQ question | Matching is semantic, not exact — phrase the FAQ question the way users actually ask, add variants for distinct intents |
 
 Prevention: [[add-knowledge]].
@@ -104,6 +105,8 @@ Prevention: [[add-knowledge]].
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `400` when creating a connection | Invalid session settings — unsupported `voiceId`, bad provider creds, or companion not ready | Read the error; fix the setting and reconnect. Invalid settings are rejected at **connect**, not at agent creation ([[create-agent]]) |
+| `429 RequestRateLimitExceeded` on connect | Connection endpoints are limited to 1 request / 5s | Honor the `Retry-After` header (seconds) before retrying — don't hardcode a wait |
+| `409 ConcurrentSessionLimitReached` | At the 5-concurrent-sessions-per-transport cap (WebRTC/WebSocket/VoIP/SIP tracked separately) | Close idle sessions — they count until closed; contact support for higher limits |
 | Agent doesn't greet | No auto-greeting | Set `initialSpeech` on the connection, or send the greeting nudge on ready ([[session-runtime]]) |
 | Memory not recalled | Missing/changing `externalClientId` | Stable ID matching `^[A-Za-z0-9_-]{1,32}$` |
 | `externalClientId` rejected | Doesn't match the regex | Hash UUIDs/emails to ≤32 allowed chars |

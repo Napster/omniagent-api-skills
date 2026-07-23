@@ -45,6 +45,8 @@ Supported types and limits:
 | `.doc` | 10 MB | | `.png` | 10 MB |
 | `.jpeg` | 10 MB | | | |
 
+A collection holds up to **30 files**. When it's full, delete files you no longer need or merge related documents before uploading. Because a session uses only one collection (see below), splitting content across several collections does **not** raise the effective limit for a single agent — consolidate instead.
+
 ### 3. (Optional) Override the file summary
 
 The platform **automatically generates a summary for each file on upload** — you don't have to set one. The summary helps retrieval pick the right file, so override it only when you want something more specific or accurate than the auto-generated text:
@@ -138,6 +140,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
 |---|---|---|
 | File never processes | URL not publicly reachable | Host on public HTTPS |
 | Upload rejected | Unsupported type or over size limit | Check the table above |
+| Can't add more files | Collection is at the 30-file limit | Delete unused files or merge documents; a collection holds 30 |
 
 ## Next steps
 
