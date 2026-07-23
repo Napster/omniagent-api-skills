@@ -25,7 +25,7 @@ curl -X POST https://companion-api.napster.com/public/agents \
     "companionId": "comp_abc123",
     "name": "Support Agent",
     "voiceId": "alloy",
-    "language": "English",
+    "language": "en",
     "functions": ["fn_abc123"],
     "faqCollections": ["faq_abc123"],
     "knowledgeBaseId": "kb_abc123",
@@ -45,7 +45,7 @@ const res = await fetch("https://companion-api.napster.com/public/agents", {
     companionId: "comp_abc123",
     name: "Support Agent",
     voiceId: "alloy",
-    language: "English",
+    language: "en",
     functions: ["fn_abc123"],
     faqCollections: ["faq_abc123"],
     knowledgeBaseId: "kb_abc123",
@@ -66,7 +66,7 @@ res = requests.post(
         "companionId": "comp_abc123",
         "name": "Support Agent",
         "voiceId": "alloy",
-        "language": "English",
+        "language": "en",
         "functions": ["fn_abc123"],
         "faqCollections": ["faq_abc123"],
         "knowledgeBaseId": "kb_abc123",
@@ -84,7 +84,7 @@ print(res.json()["id"])  # agent_…
 | `voiceId` | string | Yes | Speech output voice. Use a current supported value from the docs (see Prerequisites) — don't hardcode the list. |
 | `providerSettings` | object | Yes | Model and audio settings (below). Can be `{}` to accept defaults. |
 | `name` | string | No | A label for the agent. |
-| `language` | string | No | Plain name (`English`, `Spanish`, …). If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |
+| `language` | string | No | ISO 639-1 code (e.g. `en`, `es`, `fr`). A plain name like `"English"` is rejected with a `400`. If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |
 | `functions` | string[] | No | Tool IDs to attach. See [[create-tool]]. |
 | `faqCollections` | string[] | No | FAQ collection IDs. See [[add-knowledge]]. |
 | `knowledgeBaseId` | string | No | Knowledge collection ID. See [[add-knowledge]]. |

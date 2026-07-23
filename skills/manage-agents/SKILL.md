@@ -30,7 +30,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "language": "Spanish",
+    "language": "es",
     "voiceId": "shimmer"
   }'
 ```
@@ -39,7 +39,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
 await fetch("https://companion-api.napster.com/public/agents/agent_abc123", {
   method: "PATCH",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
-  body: JSON.stringify({ language: "Spanish", voiceId: "shimmer" }),
+  body: JSON.stringify({ language: "es", voiceId: "shimmer" }),
 });
 ```
 
@@ -48,7 +48,7 @@ import os, requests
 requests.patch(
     "https://companion-api.napster.com/public/agents/agent_abc123",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
-    json={"language": "Spanish", "voiceId": "shimmer"},
+    json={"language": "es", "voiceId": "shimmer"},
 )
 ```
 
