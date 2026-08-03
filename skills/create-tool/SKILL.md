@@ -105,7 +105,10 @@ Implicit (client-side) tools drop the `url` and set `"flow": "implicit"`. Your c
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
 | `prompt` | No (but important) | Controls *when* and *how* the agent calls the tool. See below. |
 
-**WebSocket explicit tools can also push TO the client**: send `{"type": "ui_update", "data": <any JSON>}` on the tool socket at any time (not tied to a tool call) and the platform relays it verbatim to the client as an `{"event": "ui_update"}` server event — use it to drive UI from the backend in sync with the conversation (confirmation cards, progress, page state). One-way, no ack, not stored; HTTP tools can't send it (no persistent connection). Client handling is in [[session-runtime]].
+**WebSocket explicit tools can also push, not just receive** — two message types, sendable on the tool socket at any time (not tied to a tool call); HTTP tools can't send either (no persistent connection):
+
+- `{"type": "ui_update", "data": <any JSON>}` → relayed verbatim to the CLIENT as an `{"event": "ui_update"}` server event. Drive UI from the backend in sync with the conversation (confirmation cards, progress, page state). One-way, no ack, not stored. Client handling in [[session-runtime]].
+- `{"type": "context_update", "data": {"content": "...", "role": "system", "trigger_response": false, "previous_item_id": null}}` → injected into the CONVERSATION context (server-side sibling of the client `send_message` command). `trigger_response: true` makes the agent respond immediately; `false` informs it silently from the next turn; `previous_item_id: null` appends at the end. Canonical pattern — the **deferred tool result**: a slow tool's handler returns an interim ack right away ("tell the user the result is coming"), then sends `context_update` with the real outcome when the work finishes, so the conversation is never blocked on a long-running call.
 
 ## The `prompt` field is your main lever
 

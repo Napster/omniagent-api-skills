@@ -108,7 +108,7 @@ instance.sendCommand({
 });
 ```
 
-(WebSocket: `ws.send(JSON.stringify({ type: "send_message", data: { … } }))`.)
+(WebSocket: `ws.send(JSON.stringify({ type: "send_message", data: { … } }))`. The developer's FUNCTIONS server can inject context the same way from its side — `context_update` on the tool socket, with `content` instead of `text`; see [[create-tool]]. Use that for backend-driven context like deferred tool results.)
 
 - `role`: `user` (treated as typed input) or `system` (silent context update).
 - `trigger_response`: `true` = respond now; `false` = absorb silently.
