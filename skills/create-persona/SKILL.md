@@ -9,6 +9,8 @@ A **persona** defines who your agent is: its visual appearance and personality. 
 
 You get a persona two ways: pick one from Napster's catalog (ready immediately), or create a custom one (an avatar is generated from your inputs, which takes time). Either way the output is a **persona ID** you pass to [[create-agent]]. A persona on its own is not reachable by end users.
 
+**Why persona and agent are separate resources:** the persona is the stable identity (face, name, personality), the agent is the configuration around it (voice, tools, knowledge, model settings). One persona can front several agents — the same character as a Support agent and a Sales agent with different tools — and the expensive avatar generation runs once, on the persona, no matter how often the agents around it are reconfigured. So before creating a new persona, check whether an existing one should be reused (`GET /public/companions` lists yours); create a new one only for a genuinely new character.
+
 ## Option A — pick from the catalog (fastest)
 
 Catalog personas have ready-made avatars and personalities and can be used the moment you create an agent.

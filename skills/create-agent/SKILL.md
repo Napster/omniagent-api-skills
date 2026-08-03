@@ -7,6 +7,8 @@ description: Assemble a deployable Omniagent from a persona — attach voice, la
 
 An **Omniagent** is the deployable unit: one persistent identity — persona, voice, knowledge, tools, memory — available across every channel. You define it once and deploy it to web, audio, or phone. This skill creates the agent from an existing persona ID; the output is an **agent ID**.
 
+The persona/agent split is deliberate: the persona holds the stable identity (face, personality — the avatar is generated once, there), while the agent holds the configuration around it. Reuse one persona across several agents when you want the same character with different tools or knowledge; reconfiguring an agent never touches the persona or its avatar.
+
 Creating the agent does not make it reachable. End users reach it only after you configure a channel ([[deploy-webrtc]], [[deploy-websocket]], or [[deploy-phone]]).
 
 ## Prerequisites
