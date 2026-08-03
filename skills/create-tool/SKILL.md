@@ -105,6 +105,8 @@ Implicit (client-side) tools drop the `url` and set `"flow": "implicit"`. Your c
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
 | `prompt` | No (but important) | Controls *when* and *how* the agent calls the tool. See below. |
 
+**WebSocket explicit tools can also push TO the client**: send `{"type": "ui_update", "data": <any JSON>}` on the tool socket at any time (not tied to a tool call) and the platform relays it verbatim to the client as an `{"event": "ui_update"}` server event — use it to drive UI from the backend in sync with the conversation (confirmation cards, progress, page state). One-way, no ack, not stored; HTTP tools can't send it (no persistent connection). Client handling is in [[session-runtime]].
+
 ## The `prompt` field is your main lever
 
 At runtime the API injects your `prompt` into the system instruction next to the auto-generated function signature:
