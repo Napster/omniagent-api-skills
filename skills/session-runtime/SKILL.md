@@ -165,7 +165,7 @@ async function handleData(msg) {
 - `arguments` is already a parsed object — don't `JSON.parse` it.
 - `output` should be a plain object, not a stringified one.
 - **Dedupe by `call_id`** — the same call can arrive twice (streaming + final).
-- Default tool timeout is **10s**; miss it and the model gets "Failed to fetch information" plus a `function_call_timeout` event.
+- Default tool timeout is **10s**; miss it and the model gets "Failed to fetch information" plus a `function_call_timeout` event. Slow handler? Reply with an interim `send_function_output` NOW ("working on it"), then inject the real outcome later with `send_message` (`role: "system"`, `trigger_response: true`) — see [[create-tool]] § Long-running work.
 - If the agent never calls a tool the prompt asks for: the tool isn't attached to the agent ([[create-agent]]) — creating it isn't enough.
 
 ## Common errors

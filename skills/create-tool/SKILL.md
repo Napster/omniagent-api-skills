@@ -102,10 +102,13 @@ Implicit (client-side) tools drop the `url` and set `"flow": "implicit"`. Your c
 | `flow` | Yes | `implicit` or `explicit`. |
 | `url` | explicit only | HTTP or WebSocket endpoint that receives the call. |
 | `headers` | No | Custom headers sent with explicit calls (auth, routing). |
+| `acceptMetadata` | No | WebSocket explicit tools only — include the connection's `tags` / `external_client_id` / `external_client_profile` (snake_case) in the `initialize` message. Default `false`. |
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
 | `prompt` | No (but important) | Controls *when* and *how* the agent calls the tool. See below. |
 
-**WebSocket explicit tools can also push, not just receive** — two message types, sendable on the tool socket at any time (not tied to a tool call); HTTP tools can't send either (no persistent connection):
+**WebSocket tool servers get an `initialize` message first**: when the platform connects at session start (a `wss://` URL connects once per session, not per call), the first message is `{"type": "initialize", "data": {"session_id": …, "functions": […]}}` — plus a `metadata` object if `acceptMetadata` is on. Set up per-session state there before the first tool call arrives.
+
+**WebSocket explicit tools can also push, not just receive** — two message types, sendable on the tool socket at any time (not tied to a tool call). The tool socket is between the platform and the functions server and is INDEPENDENT of the session channel — both messages work for WebRTC sessions too. HTTP tools can't send either (no persistent connection):
 
 - `{"type": "ui_update", "data": <any JSON>}` → relayed verbatim to the CLIENT as an `{"event": "ui_update"}` server event. Drive UI from the backend in sync with the conversation (confirmation cards, progress, page state). One-way, no ack, not stored. Client handling in [[session-runtime]].
 - `{"type": "context_update", "data": {"content": "...", "role": "system", "trigger_response": false, "previous_item_id": null}}` → injected into the CONVERSATION context (server-side sibling of the client `send_message` command). `trigger_response: true` makes the agent respond immediately; `false` informs it silently from the next turn; `previous_item_id: null` appends at the end. Canonical pattern — the **deferred tool result**: a slow tool's handler returns an interim ack right away ("tell the user the result is coming"), then sends `context_update` with the real outcome when the work finishes, so the conversation is never blocked on a long-running call.
@@ -142,13 +145,32 @@ Sequencing: `Only call after the user has provided name, date, and time.` / `Onl
 
 ### Long-running work — beat the timeout, answer later
 
-Tool calls time out after **10 seconds** (the model then receives "Failed to fetch information"). If the real work can't finish that fast, don't block on it:
+Tool calls time out after **10 seconds** (the model then receives "Failed to fetch information"). If the real work can't finish that fast, don't block on it: **respond to the tool call immediately** with an interim acknowledgment — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }` — then deliver the real outcome when it's ready. HOW you deliver it depends on the tool type (not the session channel):
 
-1. **Respond to the tool call immediately** with an interim acknowledgment instead of the final result — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }`. This beats the timeout and lets the agent tell the user it's working on it.
-2. **When the real answer is ready, push it into the session** as a system message with the `send_message` client command (`role: "system"`). Set `trigger_response: true` if the agent should speak the result right away, or `false` to let it absorb the information silently and use it when relevant.
+| Tool type | Late-outcome delivery |
+|---|---|
+| Explicit, WebSocket `url` | Your functions server sends `context_update` on the tool socket (see above). `trigger_response: true` → agent announces it now; `false` → absorbed silently. |
+| Explicit, HTTP `url` | No persistent connection to push through — the work must fit in 10s. If it can't, switch the tool to a `wss://` URL. |
+| Implicit | Your CLIENT holds the session: send the outcome later with the `send_message` command (`role: "system"`) — see [[session-runtime]]. |
+
+**Explicit `wss://` tool — your FUNCTIONS SERVER delivers, on the tool socket:**
+
+```json
+{
+  "type": "context_update",
+  "data": {
+    "role": "system",
+    "trigger_response": true,
+    "previous_item_id": null,
+    "content": "The order lookup finished: order #ORD-7890 shipped and arrives Friday."
+  }
+}
+```
+
+**Implicit tool — your CLIENT delivers, on the session connection it already holds** (WebRTC: via the Web SDK; WebSocket channel: `ws.send` the same JSON):
 
 ```js
-// later, once the result is computed:
+// later, once the result is computed — the client injects the outcome:
 instance.sendCommand({
   type: "send_message",
   data: {
@@ -158,8 +180,6 @@ instance.sendCommand({
   },
 });
 ```
-
-This decouples slow work from the tool-call window. The `send_message` command is part of the live session runtime — see [[session-runtime]] for the full command and event vocabulary.
 
 ## Managing tools
 
@@ -177,7 +197,7 @@ curl -X DELETE https://companion-api.napster.com/public/functions/fn_abc123 -H "
 |---|---|---|
 | Agent never calls the tool | Tool ID not in the agent's `functions` | Attach it via [[create-agent]] / [[manage-agents]] |
 | Tool fires at the wrong time | Weak `prompt` | Add explicit "Use when" / "Do NOT use when" conditions |
-| Explicit tool times out | Work slower than the 10s window | Return an interim ack immediately, then push the real answer via `send_message` (see "Long-running work" above) |
+| Explicit tool times out | Work slower than the 10s window | Return an interim ack immediately, then deliver the result late — `context_update` for `wss://` tools, or switch an HTTP tool to `wss://` (see "Long-running work" above) |
 | Agent goes silent during a call | No preamble in a slow voice tool | Add "Before calling, say …" to the prompt |
 | Duplicate side effects | Client handled the same `call_id` twice | Dedupe by `call_id` ([[session-runtime]]) |
 

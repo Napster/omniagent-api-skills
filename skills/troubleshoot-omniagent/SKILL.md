@@ -84,7 +84,7 @@ Prevention: [[deploy-phone]].
 | Side effects happen twice | Same `call_id` handled twice | Dedupe by `call_id` in a `Set` |
 | `JSON.parse(arguments)` throws | `arguments` already an object | Use it directly, don't parse |
 | Tool result ignored / odd reasoning | `output` stringified | Send a plain object, not a JSON string |
-| `function_call_timeout` fires | Handler slower than the 10s window | Return an interim ack immediately, then push the real answer via `send_message` (`role: system`) when ready — see [[create-tool]] § Long-running work |
+| `function_call_timeout` fires | Handler slower than the 10s window | Return an interim ack immediately, then deliver the result late: `context_update` on the tool socket (explicit `wss://` tools) or client `send_message` (implicit) — see [[create-tool]] § Long-running work |
 | Explicit tool never reached | Bad `url` / unreachable server | Verify the endpoint and any auth `headers` |
 
 Prevention: [[create-tool]], [[session-runtime]].
