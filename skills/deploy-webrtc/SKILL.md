@@ -99,7 +99,7 @@ cp node_modules/@touchcastllc/napster-companion-api/lib/index.css           sdk/
 ```
 
 <Callout type="warn">
-Before writing SDK code, check the current init signature and option set against the docs — there's no single "SDK reference" page. Verify init/mount/options at `fetch-page` slug `deploying-your-omniagent/channels/webrtc` (and its framework examples), event shapes at `deploying-your-omniagent/messaging/server-events`, and the full options list in the `@touchcastllc/napster-companion-api` npm README. Don't invent methods from memory.
+Before writing SDK code, check the current init signature and option set against the docs — the Web SDK has its own docs section. Verify install/init/options at `fetch-page` slugs `sdks/web-sdk/installation`, `sdks/web-sdk/initialization`, and `sdks/web-sdk/configuration`, framework wiring at `sdks/web-sdk/framework-examples`, and event shapes at `deploying-your-omniagent/messaging/server-events`. Don't invent methods from memory.
 </Callout>
 
 ## 3. Build the panel from the canonical reference

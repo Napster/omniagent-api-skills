@@ -59,6 +59,7 @@ requests.put(
 | `knowledgeBaseId` | Use a different knowledge base on the kiosk. |
 | `providerSettings` | Override temperature, turn detection, and noise reduction for the room. |
 | `useWebSearch` | Enable or disable web search on the kiosk. |
+| `idleTimeoutSeconds` | How long to wait before ending an inactive conversation and resetting for the next visitor — core to walk-up use. |
 
 Omit the overrides to inherit the agent's defaults. Like the phone channel — and unlike WebRTC/WebSocket — the kiosk config is **persistent**: set it once and it stays until you change or remove it.
 

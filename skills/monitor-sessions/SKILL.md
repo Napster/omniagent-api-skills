@@ -20,6 +20,8 @@ curl "https://companion-api.napster.com/public/sessions?pageSize=10" \
 
 Each item includes `id`, `companionId` (+ `companion`), `functions`, `knowledgeBaseId`, `faqIds`, `externalClientId`, `tags`, `sessionType` (`webrtc`/`websocket`/`voip`/`sip`/`kiosk`), `modality` (`audio`/`text`/`video`), `status`, `closeReason`, `cost`, and timestamps (`createdAt`, `startedAt`, `closedAt`). The envelope has `items`, `filteredCount`, `totalCount`, `pageIndex`, `pageSize`.
 
+`status` is `pending`, `started`, `closed`, or `failed` — a session moves `pending → started → closed`, or straight to `failed` if the connection is never established. Failed sessions appear in the list like any other (they are deliberately kept in analytics); there is **no status filter parameter** — separate them client-side by the field. For `failed` sessions, `closeReason` may indicate the cause.
+
 `cost` is the billed cost of the session in **USD** — computed from the minutes the agent was active and your API key's model configuration. It is `null` while the session is `pending` or `started`, and is populated once the session closes. Sum `cost` across a filtered list (by `companionId` or `externalClientId`) to attribute spend per persona or per end user.
 
 ### Filters
@@ -91,6 +93,19 @@ s = requests.get(
 for m in s["conversation"]["items"]:
     print(f'{m["role"]}: {m["text"]}')
 ```
+
+### Tool connection metrics (`functionMetrics`)
+
+Session details also include `functionMetrics` — the connection lifecycle of each **WebSocket-based** tool (HTTP/implicit tools never appear; they hold no session-long connection). Use it to answer "did my tool connect, when, and why not":
+
+```json
+"functionMetrics": [
+  { "name": "get_order_status", "state": "connected", "startedAt": "2026-08-14T10:15:02Z", "connectedAt": "2026-08-14T10:15:03Z" },
+  { "name": "check_inventory", "state": "failed", "startedAt": "2026-08-14T10:15:02Z", "failedAt": "2026-08-14T10:15:07Z", "error": { "code": "connection_failed", "message": "WebSocket handshake timed out" } }
+]
+```
+
+Per tool: `state`, `startedAt` / `connectedAt` / `failedAt` (with `error {code, message}`) / `canceledAt` — canceled means the user dropped the session (closed the tab) before the tool finished connecting. Only the timestamps that occurred are present. What the *session* does about a slow or failed tool socket is the tool's `connectionBehavior` setting — see [[create-tool]].
 
 ## Patterns
 

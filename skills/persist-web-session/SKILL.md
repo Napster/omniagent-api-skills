@@ -31,6 +31,8 @@ By default the wrap is **eager**: the site is wrapped as soon as the session con
 
 Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed on stays completely native, and the iframe appears on the first allowed link click. The cost: until that click, only link clicks are intercepted — a programmatic navigation on the landing page ends the session unless it's routed through the event (§4). Offer this mode when the developer cares that the landing page render exactly as it does without persistence.
 
+**Navigation feedback — `navigationProgress`.** A navigation the engine takes over drives no browser chrome (no tab spinner), so a click can look dead for the whole load. Opt in to a thin progress bar over the page: `navigationProgress: true` (default styling: `#be369d`, `3px`) or `{ color, height }`; the CSS custom properties `--np-persist-progress-color` / `--np-persist-progress-height` override it from a stylesheet. Off by default — skip it if the site shows its own navigation indicator.
+
 ## 3. Break-out rules and `exclude`
 
 Some destinations must leave the frame (a real top-level navigation that ends the session):

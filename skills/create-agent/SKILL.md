@@ -85,7 +85,7 @@ print(res.json()["id"])  # agent_…
 | `companionId` | string | Yes | The persona that defines appearance and personality. |
 | `voiceId` | string | Yes | Speech output voice. Use a current supported value from the docs (see Prerequisites) — don't hardcode the list. |
 | `providerSettings` | object | Yes | Model and audio settings (below). Can be `{}` to accept defaults. |
-| `name` | string | No | A label for the agent. |
+| `name` | string | Yes | A label for the agent. |
 | `language` | string | No | ISO 639-1 code (e.g. `en`, `es`, `fr`). A plain name like `"English"` is rejected with a `400`. If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |
 | `functions` | string[] | No | Tool IDs to attach. See [[create-tool]]. |
 | `faqCollections` | string[] | No | FAQ collection IDs. See [[add-knowledge]]. |
@@ -130,6 +130,7 @@ The same agent serves all channels at once — deploy to one now, add more later
 |---|---|---|
 | `400` when opening a connection (unsupported `voiceId`, bad provider creds, companion not ready) | Invalid settings are **not** validated at agent creation — only when a connection is created | Fix the flagged setting (e.g. a supported voice from `building-your-omniagent/configuration`), update the agent, then reconnect |
 | `400` missing `providerSettings` | Field omitted | Required — send `{}` to accept defaults |
+| `409` code `AgentLimitExceeded` | Organization at its agent cap (100 by default) | Delete unused agents ([[manage-agents]]) or ask Napster to raise the org's limit |
 | Agent ignores attached tool | Tool ID not in `functions` | Add the ID; creating a tool does not auto-attach it ([[create-tool]]) |
 | Knowledge not used | Wrong/empty `knowledgeBaseId` or provider mismatch | One collection per session; provider must match ([[add-knowledge]]) |
 | Agent won't switch language | `language` was set | Setting `language` locks it; omit to allow switching |

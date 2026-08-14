@@ -102,11 +102,11 @@ Implicit (client-side) tools drop the `url` and set `"flow": "implicit"`. Your c
 | `flow` | Yes | `implicit` or `explicit`. |
 | `url` | explicit only | HTTP or WebSocket endpoint that receives the call. |
 | `headers` | No | Custom headers sent with explicit calls (auth, routing). |
-| `acceptMetadata` | No | WebSocket explicit tools only — include the connection's `tags` / `external_client_id` / `external_client_profile` (snake_case) in the `initialize` message. Default `false`. |
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
+| `connectionBehavior` | No | WebSocket explicit tools only — what the *session* does about your server's socket at start: `waitBeforeStart` (`true`: session waits for the socket to connect; `false`: starts after a short wait, tool joins late) and `abortOnFailure` (`true`: session aborted if the socket fails; `false`: session starts anyway, client notified). Both default `false` — a **behavior change**: the platform previously always waited and aborted, so existing `wss://` tools now get non-waiting starts unless they opt back in. |
 | `prompt` | No (but important) | Controls *when* and *how* the agent calls the tool. See below. |
 
-**WebSocket tool servers get an `initialize` message first**: when the platform connects at session start (a `wss://` URL connects once per session, not per call), the first message is `{"type": "initialize", "data": {"session_id": …, "functions": […]}}` — plus a `metadata` object if `acceptMetadata` is on. Set up per-session state there before the first tool call arrives.
+**WebSocket tool servers get an `initialize` message first**: when the platform connects at session start (a `wss://` URL connects once per session, not per call), the first message is `{"type": "initialize", "data": {"session_id": …, "functions": […], "metadata": {…}}}`. The `metadata` object is **always included** — it carries the connection's `tags` / `external_client_id` / `external_client_profile` (snake_case; fields you didn't set at connection creation are simply absent). Set up per-session state there before the first tool call arrives.
 
 **WebSocket explicit tools can also push, not just receive** — two message types, sendable on the tool socket at any time (not tied to a tool call). The tool socket is between the platform and the functions server and is INDEPENDENT of the session channel — both messages work for WebRTC sessions too. HTTP tools can't send either (no persistent connection):
 

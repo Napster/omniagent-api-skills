@@ -1,11 +1,11 @@
 ---
 name: deploy-phone
-description: Put an Omniagent on the phone — give it a phone number and the agent answers when someone calls. Use when the developer says "put the agent on the phone", "answer phone calls", "set up a phone number", "VoIP", "SIP", "Twilio", or "telephony". Two paths — VoIP (Napster exposes a webhook Twilio calls — Twilio is the only supported VoIP provider; the default) and SIP (bring your own trunk). Covers the channel config, human handoff, and routing a number to the agent. If the developer doesn't say which, default to VoIP. For web use [[deploy-webrtc]]; for audio-only use [[deploy-websocket]].
+description: Put an Omniagent on the phone — it answers incoming calls, and on SIP it can also place outbound calls. Use when the developer says "put the agent on the phone", "answer phone calls", "set up a phone number", "VoIP", "SIP", "Twilio", or "telephony". Two paths — VoIP (Napster exposes a webhook Twilio calls — Twilio is the only supported VoIP provider; the default) and SIP (bring your own trunk). Covers the channel config, human handoff, and routing a number to the agent. If the developer doesn't say which, default to VoIP. For web use [[deploy-webrtc]]; for audio-only use [[deploy-websocket]].
 ---
 
 # deploy-phone
 
-The phone channel lets an Omniagent answer inbound calls: you give it a phone number and the agent picks up when someone calls. The same agent you run on web and WebSocket answers the phone — one identity, every surface.
+The phone channel puts an Omniagent on a phone number: it answers when someone calls, and on the SIP path it can also [dial out](#outbound-calls-sip-only). The same agent you run on web and WebSocket answers the phone — one identity, every surface.
 
 There are two ways to wire up the phone. **If the developer doesn't say which, default to VoIP** — it's the simpler path: Napster only exposes a webhook, the developer's Twilio account does the rest, and there's no trunk of your own to register.
 
@@ -166,6 +166,19 @@ curl https://companion-api.napster.com/public/sip-connections/sipconn_abc123/err
   -H "X-Api-Key: $NAPSTER_API_KEY"
 # [{ "timestamp": "...", "message": "SIP registration failed: 401 Unauthorized", "code": 401 }]
 ```
+
+### Outbound calls (SIP only)
+
+Once a SIP connection is registered (`sipStatus: online`), the agent can dial out:
+
+```bash
+curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_abc123/call \
+  -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" \
+  -d '{ "destination": "+15551234567", "initialSpeech": "Hi, this is Ava from Acme — calling about your order." }'
+# { "status": "dialing" }
+```
+
+`destination` is required; `initialSpeech` (optional) is what the agent says the moment the call is answered — without it, the agent opens with its default greeting behavior. The conversation lands in sessions ([[monitor-sessions]]) like any other SIP call. VoIP remains inbound-only.
 
 ### Managing SIP connections
 
