@@ -1,6 +1,6 @@
 ---
 name: edge-mcp-setup
-description: Agentify your website — prepare your app so an AI agent can operate it the way a person does today, by exposing your app's real operations as tools (what it can DO) and live state (what it can SEE) via the WebMCP standard (`document.modelContext`), wired against your app's real code. Vendor-neutral — any WebMCP-compatible agent can drive the result; a Napster Omniagent is one such agent, not a requirement. Use when the developer says "agentify this app", "set up Edge MCP", "add Edge MCP", "let an agent operate my site", "add agent actions to my website", or "set up WebMCP". This is the ORCHESTRATOR — it owns the journey and hands each phase to a specialist skill — [[edge-mcp-plan]] (decide), [[edge-mcp-implement]] (build), [[edge-mcp-dev-panel]] (test by hand, optional), [[edge-mcp-sync]] (maintain). Embedding the agent that uses the tools is a separate step — for a Napster Omniagent that's [[deploy-webrtc]]. Stops once tools are registered and verified and a keep-in-sync mechanism has been offered.
+description: Agentify your website — prepare your app so an AI agent can operate it the way a person does today, by exposing your app's real operations as tools (what it can DO) and live state (what it can SEE) via the WebMCP standard (`document.modelContext`), wired against your app's real code. Vendor-neutral — any WebMCP-compatible agent can drive the result; a Napster Omniagent is one such agent, not a requirement. Use when the developer says "agentify this app", "set up Edge MCP", "add Edge MCP", "let an agent operate my site", "add agent actions to my website", or "set up WebMCP". This is the ORCHESTRATOR — it owns the journey and hands each phase to a specialist skill — [[edge-mcp-plan]] (decide), [[edge-mcp-implement]] (build), [[edge-mcp-sync]] (maintain). Embedding the agent that uses the tools is a separate step — for a Napster Omniagent that's [[deploy-webrtc]]. Stops once tools are registered and verified and a keep-in-sync mechanism has been offered.
 ---
 
 # edge-mcp-setup
@@ -17,7 +17,7 @@ This skill is the **orchestrator**. It owns the journey and the conversation wit
 |---|---|---|
 | 1 | DECIDE what the agent may do, see, and never touch | `edge-mcp-plan` |
 | 2 | BUILD the approved plan into the app | `edge-mcp-implement` |
-| 3 | TEST by hand (optional, persona-gated) | `edge-mcp-dev-panel` |
+| 3 | TEST by hand (optional — console snippet + Chrome DevTools) | this skill (conversation) |
 | 4 | SIGN OFF with the developer | this skill (conversation) |
 | 5 | KEEP IN SYNC — write the note (always); offer the hook (opt-in) | this skill → `edge-mcp-sync` |
 | 6 | CLOSE THE LOOP — offer to deploy an agent | this skill (conversation) |
@@ -48,19 +48,17 @@ With the approved plan in hand, **invoke the `edge-mcp-implement` skill.** It in
 
 Do not accept a green build as done. The implement skill hands back a report: where the integration landed, what's registered, and which tools it actually invoked at runtime. You'll relay that in the sign-off.
 
-## 3. Offer the dev panel (to developers who'll actually use it)
+## 3. Offer a hand-test (console + Chrome DevTools)
 
-The dev panel is **hand-testing scaffolding for developers** — a floating UI they open in the browser to poke tools by hand. For someone doing this for the first time it's also something more: no agent is connected yet at this point, so the panel is the one place they can *see* their app respond to tool calls today. Pitch it that way to a first-timer — "want to see your app respond to agent tool calls?" — not just as testing scaffolding.
+There is no bundled inspector UI — hand-testing runs through the browser itself, and it only lands if the person works in the running app directly. Gauge who you're talking to before offering:
 
-It still only lands if the person works in the running app themselves. So gauge who you're talking to before offering it:
+- **If they work in the app directly (browser, DevTools, local dev server)** — offer the hand-test:
 
-- **If they work in the app directly (open it in a browser, use DevTools, run it locally)** — offer the panel:
+  > "Want to see your app respond to agent tool calls before any agent is connected? Paste one snippet into your browser console — it lists your registered tools and fires one per safety level — and paste me back what it prints. Chrome users can also watch the tools and every call live in DevTools → Application → WebMCP — it needs two chrome://flags enabled first (`#enable-webmcp-testing` + 'WebMCP support in DevTools', Chrome 149+, relaunch)."
 
-  > "Want me to install a dev-only panel for testing the integration? It mounts in dev mode, lists every registered tool with a form for its arguments (rendered from each tool's `inputSchema`), shows every resource with a live JSON view, and logs every invoke and resource update. Toggle with `Cmd+Shift+E`. Skip if you'd rather not — the tools work either way."
+  If yes: give them the canned verifier snippet from [[edge-mcp-implement]] (`verify-snippet.js` in that skill's folder), have them paste its output back to you, and read the results together. For live resources, have them set `globalThis.__EDGE_MCP_DEBUG__ = true` in the console — the `[edge-mcp]` flow logs narrate every resource push, read, and subscription.
 
-  If yes, run the `edge-mcp-dev-panel` skill — it handles the install and walks through usage.
-
-- **If they do everything through you (the agent) and won't be opening a browser panel** — don't push it. A panel they never open is dead code. The runtime verification from step 2 already proved the tools work; just tell them it's done. Mention the panel exists in one line ("there's an optional dev panel if you ever want to poke the tools by hand — say the word") and move on.
+- **If they do everything through you (the agent) and won't open a browser console** — don't push it. The runtime verification from step 2 already proved the tools work; just tell them it's done, and mention in one line that the console snippet exists if they ever want to poke the tools by hand.
 
 Either way, if they decline, continue to sign-off; testing beyond step 2's verification is their call.
 
@@ -76,11 +74,10 @@ Walk the developer through:
 
 When you finish, present:
 
-- The path to the edge-mcp folder, wherever it landed in this app (with its orchestration `index.ts`, the `tools/` folder — one file per tool plus its registrar — and `resources.ts`, plus `handles.ts`, `dev-panel.ts` if applicable).
+- The path to the edge-mcp folder, wherever it landed in this app (with its orchestration `index.ts`, the `tools/` folder — one file per tool plus its registrar — and `resources.ts`, plus `handles.ts` if applicable).
 - The tool list with safety annotations and idempotency hints.
 - The resources with their why-each-cleared-the-gate notes (or "none registered, by design").
 - The withheld-by-choice list.
-- Whether the dev panel was installed (and where to toggle it if so).
 - The result of runtime verification.
 
 ## 5. Keep the surface in sync

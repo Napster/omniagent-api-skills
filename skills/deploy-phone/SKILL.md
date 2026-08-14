@@ -1,24 +1,24 @@
 ---
 name: deploy-phone
-description: Put an Omniagent on the phone — give it a phone number and the agent answers when someone calls. Use when the developer says "put the agent on the phone", "answer phone calls", "set up a phone number", "VoIP", "SIP", "Twilio", or "telephony". Two paths — VoIP (Napster exposes a webhook your VoIP provider calls; the default) and SIP (bring your own trunk). Covers the channel config, human handoff, and routing a number to the agent. If the developer doesn't say which, default to VoIP. For web use [[deploy-webrtc]]; for audio-only use [[deploy-websocket]].
+description: Put an Omniagent on the phone — give it a phone number and the agent answers when someone calls. Use when the developer says "put the agent on the phone", "answer phone calls", "set up a phone number", "VoIP", "SIP", "Twilio", or "telephony". Two paths — VoIP (Napster exposes a webhook Twilio calls — Twilio is the only supported VoIP provider; the default) and SIP (bring your own trunk). Covers the channel config, human handoff, and routing a number to the agent. If the developer doesn't say which, default to VoIP. For web use [[deploy-webrtc]]; for audio-only use [[deploy-websocket]].
 ---
 
 # deploy-phone
 
 The phone channel lets an Omniagent answer inbound calls: you give it a phone number and the agent picks up when someone calls. The same agent you run on web and WebSocket answers the phone — one identity, every surface.
 
-There are two ways to wire up the phone. **If the developer doesn't say which, default to VoIP** — it's the simpler path: Napster only exposes a webhook, the developer's VoIP provider does the rest, and there's no trunk of your own to register.
+There are two ways to wire up the phone. **If the developer doesn't say which, default to VoIP** — it's the simpler path: Napster only exposes a webhook, the developer's Twilio account does the rest, and there's no trunk of your own to register.
 
 | Path | What it is | When |
 |---|---|---|
-| **VoIP** (default) | Napster exposes a **webhook endpoint** for the agent. You register it with a VoIP-capable provider for a phone number; on an incoming call the provider calls the webhook to connect the caller to the agent. The provider owns the number and the telephony — Napster only provides the webhook. No trunk credentials. **Human handoff is not yet supported on this path.** | Most cases — fastest way to get the agent on a number. |
+| **VoIP** (default) | Napster exposes a **webhook endpoint** for the agent. You register it with Twilio (the only supported VoIP provider) for a phone number; on an incoming call Twilio calls the webhook to connect the caller to the agent. Twilio owns the number and the telephony — Napster only provides the webhook. No trunk credentials. **Human handoff is not yet supported on this path.** | Most cases — fastest way to get the agent on a number. |
 | **SIP** | You bring your own SIP trunk (a PBX or any SIP trunk provider) and hand Napster credentials to register against it. Supports human handoff. | You already run a SIP trunk, need the agent on existing telephony, or need human handoff. |
 
 Both attach to the **same agent** — create it once ([[create-agent]]); a clear persona and a set `language` help on voice-only calls. Unlike WebRTC/WebSocket (created per session), the phone channel is a **persistent** config: set it once and the agent answers until you remove it.
 
 ---
 
-## Path A — VoIP (default; Napster exposes a webhook your provider calls)
+## Path A — VoIP (default; Napster exposes a webhook Twilio calls)
 
 ### 1. Configure the VoIP channel
 
@@ -35,7 +35,7 @@ curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channel
   }'
 ```
 
-The response is the channel config, including the provisioned **`voipEndpoint`** — this is the **webhook URL** your VoIP provider will call on an incoming call:
+The response is the channel config, including the provisioned **`voipEndpoint`** — this is the **webhook URL** Twilio will call on an incoming call:
 
 ```json
 {
@@ -74,14 +74,14 @@ You can also pass `functions`, `faqCollections`, `knowledgeBaseId`, and `provide
 **Human handoff is not available on VoIP today** — it's a SIP-only capability for now (expected to come to VoIP later). If the developer needs the agent to transfer a caller to a human, use the SIP path below. Don't set `humanHandoff` on the `voip` channel config.
 </Callout>
 
-### 2. Register the webhook with your VoIP provider
+### 2. Register the webhook with Twilio
 
-Take the `voipEndpoint` URL and set it as the **incoming-call webhook** for a phone number at your VoIP provider (Twilio, Telnyx, Vonage, etc.). When someone calls that number, the provider invokes the webhook and connects the caller to the agent.
+Take the `voipEndpoint` URL and set it as the **incoming-call webhook** for a phone number in Twilio — currently the only supported VoIP provider. When someone calls that number, Twilio invokes the webhook and connects the caller to the agent.
 
-The exact place to paste the URL is provider-specific — look for your provider's **voice / incoming-call webhook** setting on the phone number's configuration. No SIP trunk credentials are needed for this path; the provider just needs the webhook URL.
+In the Twilio Console: **Phone Numbers → Manage → Active Numbers → select the number → Voice Configuration**, then set the `voipEndpoint` as the **"A call comes in"** webhook. No SIP trunk credentials are needed for this path; Twilio just needs the webhook URL.
 
 <Callout type="warn">
-The provider calls `voipEndpoint` on every inbound call, so treat the URL as sensitive and don't expose it publicly beyond the provider configuration. Re-fetch the channel config if you need it again rather than hardcoding it in client code.
+Twilio calls `voipEndpoint` on every inbound call, so treat the URL as sensitive and don't expose it publicly beyond the Twilio configuration. Re-fetch the channel config if you need it again rather than hardcoding it in client code.
 </Callout>
 
 ### 3. Verify
@@ -199,7 +199,7 @@ If a developer asks for human handoff on VoIP today, route them to the SIP path 
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| (VoIP) Number rings but agent doesn't answer | Webhook not set, or set on the wrong number | Set `voipEndpoint` as the incoming-call webhook for that number at your provider |
+| (VoIP) Number rings but agent doesn't answer | Webhook not set, or set on the wrong number | Set `voipEndpoint` as the "A call comes in" webhook for that number in Twilio |
 | (SIP) `sipStatus` stuck on `registering` | Bad credentials / wrong transport | Check `/errors`; `401` = credentials; verify server/domain/transport |
 | (SIP) `lifecycleStatus: Failed` | Listener couldn't start | Read `status.message`; recheck `settings` |
 | (SIP) Calls ring but agent doesn't answer | Number not routed to the trunk | Fix provider-side routing to the SIP endpoint |

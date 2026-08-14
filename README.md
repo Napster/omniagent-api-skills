@@ -2,7 +2,7 @@
 
 The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a set for agentifying your own website (WebMCP / Edge MCP — expose its real operations and live state so any compatible agent, your Omniagent included, can operate it), a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
 
-**Where it runs:** the 17 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
+**Where it runs:** the 19 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
 
 ## After install, start here
 
@@ -184,12 +184,12 @@ omniagent-api-skills/
 │   ├── deploy-websocket/              Audio or text channel for headless/custom clients
 │   ├── deploy-phone/                   Phone channel — a number the agent answers (VoIP or SIP)
 │   ├── deploy-kiosk/                   In-person channel — a Napster Station (gated)
+│   ├── persist-web-session/            Keep one session alive across page loads on multi-page sites
 │   ├── session-runtime/                Per-session config, server events, client commands
 │   ├── monitor-sessions/               List sessions, pull transcripts
 │   ├── edge-mcp-setup/                 Agentify your website — the orchestrator that runs the four skills below
 │   ├── edge-mcp-plan/                  Plan what an agent can DO and SEE on your site
 │   ├── edge-mcp-implement/             Build the approved plan — register tools + live state, verify at runtime
-│   ├── edge-mcp-dev-panel/             Dev-only panel to test your website's agent tools by hand
 │   ├── edge-mcp-sync/                  Keep your website's agent tools in sync as your app changes
 │   └── troubleshoot-omniagent/         The pitfall index, organized by area
 └── assets/

@@ -33,7 +33,7 @@ Importing the package is a browser-only side effect: it polyfills the WebMCP sta
 
 Everything else — the folder's location and name, TypeScript vs JavaScript, file idiom, how the entry point pulls it in — is convention, adapted to the app. The **default convention** below fits most JS apps; use it when the app doesn't suggest otherwise, and adapt it without hesitation when it does (`src/lib/edge-mcp/`, `app/lib/edge-mcp/`, plain `.js` files, etc.).
 
-**No package manager or build step?** (a server-rendered app with sprinkled scripts — WordPress, Rails/Django/PHP templates — or a static no-build site): skip `npm install` and use the package's pre-bundled script-tag build instead. Load it once, version-pinned, before any registrations:
+**No package manager or build step?** (a server-rendered app with sprinkled scripts — Rails/Django/PHP templates — or a static no-build site): skip `npm install` and use the package's pre-bundled script-tag build instead. Load it once, version-pinned, before any registrations:
 
 ```html
 <script src="https://cdn.jsdelivr.net/npm/@napster-corp/edge-mcp@0.1/dist/edge-mcp.iife.min.js"></script>
@@ -55,7 +55,7 @@ src/edge-mcp/
 
 **One tool per file.** Each file in `tools/` exports a single descriptor and registers nothing; the actual `document.modelContext.registerTool(...)` calls all happen one level up in `tools/index.ts`. This keeps each tool small and reviewable in isolation, makes the automation's diff per-tool, and still keeps the full exposed surface auditable in one read (the registrar lists every tool). Name each file after its tool, kebab-cased: `products.search` → `products-search.ts`, `cart.add` → `cart-add.ts`.
 
-Resources stay in a single `resources.ts` — they're the exception, not the rule (see section 3), and rarely number more than a few. A `handles.ts` file appears alongside only if a tool's `execute` needs framework context (see "the handle pattern" below), and a `dev-panel.ts` file appears later only if the developer opts into the optional `edge-mcp-dev-panel` skill. The setup itself never creates either unless needed.
+Resources stay in a single `resources.ts` — they're the exception, not the rule (see section 3), and rarely number more than a few. A `handles.ts` file appears alongside only if a tool's `execute` needs framework context (see "the handle pattern" below). The setup itself never creates either unless needed.
 
 ### `src/edge-mcp/index.ts`
 
@@ -438,7 +438,16 @@ registerResource({
 - **Don't clear-on-unmount between related views.** If navigating from one order page to another briefly tears down and rebuilds the same slice, the agent sees a `null` flash in between. Keep the slice populated across related transitions instead of blinking through empty.
 - **Remember most pushes during an agent action are echoes.** When the agent itself just acted, the resulting state change is something it already got in the return. The fewer resources you expose, the less echo the consumer has to suppress.
 
-- **Subscribe to the narrowest real change signal, not the whole store.** On every call to your `subscribe` callback, the extension re-reads `get()` and emits `resourceupdated` — it does not diff. So if you wire `subscribe` to a whole store that fires several times per operation (e.g. `setPending → setError → setCart → setPending`), or that fires on state outside your slice (loading/error/pending flags), each fire becomes an *echo* carrying an unchanged value, and the consumer's log fills with duplicates. Prefer a **selector subscription** so `onChange` runs only when your slice actually changes — Zustand's `store.subscribe(selectSlice, onChange)` via `subscribeWithSelector`, an RxJS `distinctUntilChanged`, a signal/`computed`, or your framework's equivalent. The example above already does this (`store.subscribe(s => s.cart, onChange)` fires only on the `cart` slice) — a bare `store.subscribe(onChange)` would not. If the store only offers a broad subscribe you can't narrow, expect echoes and dedupe downstream (the consumer-side pattern is in `edge-mcp-dev-panel`).
+- **Subscribe to the narrowest real change signal, not the whole store.** On every call to your `subscribe` callback, the extension re-reads `get()`, then compares the result against the last value it dispatched for that URI and **drops the push when it serializes identically** (see the behavior contract below). So a chatty store — one that fires several times per operation (`setPending → setError → setCart → setPending`), or on state outside your slice (loading/error/pending flags) — won't spam the consumer with unchanged values: those echoes are filtered at the source. Prefer a **selector subscription** anyway, so `onChange` runs only when your slice actually changes — Zustand's `store.subscribe(selectSlice, onChange)` via `subscribeWithSelector`, an RxJS `distinctUntilChanged`, a signal/`computed`, or your framework's equivalent. The example above already does this (`store.subscribe(s => s.cart, onChange)` fires only on the `cart` slice) — a bare `store.subscribe(onChange)` would not. The reason is cost and clarity, not correctness: every fire pays for a `get()` call plus a serialization, and a narrow subscription makes the debug log read as one push per real change. Don't hand-roll a consumer-side dedupe for unchanged values — the extension already does exactly that.
+
+### The resource behavior contract
+
+What the extension guarantees at runtime. Build and test against these — they're what makes a resource observable:
+
+- **Reads are never cached.** `readResource(uri)` calls `get()` at the moment of the read and returns what it returns — no stored copy, no TTL. Instrumenting `get()` is therefore a sound way to observe reads in a test, with one caveat: **pushes call `get()` too**, so a naive call counter registers pushes as well as reads.
+- **Consecutive identical pushes are filtered.** The comparison is against the immediately previous *dispatched* value only, not a history: `A → A → A` delivers one push, `A → B → A` delivers three. A test asserting "N user actions ⇒ N updates" only holds if every action genuinely changes the value. A filtered push logs `push suppressed (value unchanged)` in debug mode. If a value can't be JSON-serialized (cycles, `BigInt`), the extension fails **open** — it dispatches and drops the baseline, so a comparison it can't make never silences a real change.
+- **`subscribe` must return an unsubscribe function.** The extension calls it on unregister and before a re-registration. Return nothing and the subscription leaks; you get a console warning, not an error.
+- **Re-registering the same `uri`** replaces the descriptor: the previous subscription is torn down first, and the comparison baseline is cleared — so the first push after a re-registration always dispatches, even if the value is unchanged. Expect this on hot reload.
 
 ## 4. Safety annotations — writing the plan's levels as code
 
@@ -581,8 +590,8 @@ The five-minute runtime check catches all of these. **Run it before declaring do
 The checks:
 
 1. Start the app the way the app itself starts (`npm run dev`, `yarn dev`, `pnpm dev`, or whatever its own scripts and README say) and load it in a browser.
-2. Open the browser console. Confirm you see the `[edge-mcp dev panel] mounted` log line if the dev panel was installed, or run `await document.modelContext.getTools()` to confirm the polyfill installed and the registry is populated. If it's empty, the registrations didn't run — investigate before going further.
-3. Invoke **at least one tool per safety level** you registered (read / reversible / needs-confirmation, if present). The fastest way is the **canned verifier snippet** — [`verify-snippet.js`](verify-snippet.js) in this skill folder — a ready-to-paste console script that reads `getTools()`, buckets tools by safety level, and fires one tool per tier, logging each result. Paste it as-is (it dry-runs by default; flip `RUN_WRITES` to also fire one reversible and one needs-confirmation tool). Or do it by hand from the dev panel (Cmd+Shift+E → expand the tool → fill its form → Run) or DevTools:
+2. Open the browser console and run `await document.modelContext.getTools()` to confirm the polyfill installed and the registry is populated. If it's empty, the registrations didn't run — investigate before going further.
+3. Invoke **at least one tool per safety level** you registered (read / reversible / needs-confirmation, if present). The fastest way is the **canned verifier snippet** — [`verify-snippet.js`](verify-snippet.js) in this skill folder — a ready-to-paste console script that reads `getTools()`, buckets tools by safety level, and fires one tool per tier, logging each result. Paste it as-is (it dry-runs by default; flip `RUN_WRITES` to also fire one reversible and one needs-confirmation tool). Or do it by hand from the DevTools console (in Chrome 149+, DevTools → Application → WebMCP also lists every tool and logs each call — enable `chrome://flags/#enable-webmcp-testing` and 'WebMCP support in DevTools' first, then relaunch):
 
    ```js
    const tools = await document.modelContext.getTools();
@@ -601,9 +610,9 @@ The checks:
    const text = raw == null ? '(no output)' : JSON.parse(raw).content?.[0]?.text ?? raw;
    ```
 
-   The `edge-mcp-dev-panel` skill (§"`inputSchema` comes back as a JSON string" and §"`executeTool` resolves with the envelope") is the canonical home for both — reach for the same shape anywhere you consume the surface by hand, rather than writing a fresh `JSON.parse` per call site.
+   These two one-liners are the canonical shapes — reach for them anywhere you consume the surface by hand, rather than writing a fresh `JSON.parse` per call site.
 4. Confirm for each: the returned `content` makes sense, the UI reacts appropriately (cart drawer slides open, page navigates, modal appears). **Verify a navigation by the tool's own return, not by re-reading `currentPage`/location** — a nav tool's promise resolves *before* the router re-renders, so reading the location right after returns the *previous* page (a real runtime race). The tool's return is the confirmation the nav was issued; trust it.
-5. If you registered resources: trigger a real out-of-band change (click a UI button, wait for an auto-updating resource to tick) and confirm the resource updates (the dev panel's RESOURCE log fires, or re-reading the resource's `get()` shows the new value).
+5. If you registered resources: trigger a real out-of-band change (click a UI button, wait for an auto-updating resource to tick) and confirm the resource updates: set `globalThis.__EDGE_MCP_DEBUG__ = true` and watch the `[edge-mcp]` log line `resource "…" changed →` fire, or re-read the resource's `get()` and check the new value.
 
 When all of these pass, report back — to the developer directly, or to the `edge-mcp-setup` sign-off when orchestrated — with: the path where the integration landed, the tool list with annotations, the resources registered (or "none, by design"), and **which tools you actually invoked at runtime and what reacted**. If verification was skipped, the report must say so explicitly ("runtime verification: skipped at the developer's request — recommend running it before connecting an agent") instead of claiming success.
 

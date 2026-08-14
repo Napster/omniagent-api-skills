@@ -235,7 +235,19 @@ The iframe must grant the permissions the SDK uses, or the mic preflight fails e
 <iframe src="…" allow="microphone; camera; autoplay"></iframe>
 ```
 
-## 5. (Optional) Faster start with `videoPolicy: "deferred"`
+## 5. Multi-page site? Turn on persistence
+
+Ask this early: **does navigation reload the page?** On a single-page app the session survives on its own — skip this. On a traditional multi-page site, every navigation is a full page load that tears the session down mid-conversation, so enable it:
+
+```js
+NapsterCompanionApiSdk.init(token, {
+  persistence: { enabled: true },
+});
+```
+
+The full treatment — when the wrap happens, break-out rules and `exclude`, routing programmatic navigation through `PERSIST_NAVIGATE_EVENT`, and the verification pass — is its own skill: [[persist-web-session]]. Invoke it whenever this question answers "multi-page".
+
+## 6. (Optional) Faster start with `videoPolicy: "deferred"`
 
 By default (`videoPolicy: "required"`) the session becomes ready only when audio and video are both up — one `avatar_state_changed: ready`. Set `"deferred"` on the WebRTC channel config to let the conversation start on audio first, with the video avatar coming up moments later:
 
@@ -248,7 +260,7 @@ curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channel
 
 WebRTC-only (WebSocket sessions have no video). **Contract change:** under `"deferred"` the session emits `ready` TWICE — first with `details: { mode: "audio_only" }`, again with `details: { mode: "audio_video" }` when video is up. Any handler keyed on `avatar_state_changed: ready` must latch (run once); `onAvatarReady` is unaffected (fires once, at video render — which under `"deferred"` is after the conversation is already live). See [[session-runtime]] for the event handling.
 
-## 6. (Optional) Green-screen background for compositing
+## 7. (Optional) Green-screen background for compositing
 
 Skip this unless you need to composite the agent over your own UI (no backdrop, the person "floating" on the page). The default `avatarStyle.view: "rectangle"` already works for the standard embedded panel above; only switch to silhouette if you need to chroma-key the avatar yourself.
 
@@ -276,7 +288,7 @@ await NapsterCompanionApiSdk.init(token, {
 
 The two settings have to be in sync. If the server sends a green-screened stream but the SDK isn't using `silhouette`, the chroma color shows through; if the SDK is in `silhouette` but the server isn't sending the green stream, there's nothing to key out.
 
-## 7. Production
+## 8. Production
 
 The local token server is a prototype. Before shipping, port `/token` into your backend with: per-user **authentication**, **rate limiting**, and per-session context (`externalClientId` / `externalClientProfile`) resolved from the signed-in user. The browser's `fetch('/token')` line doesn't change. The API key never reaches the browser.
 
@@ -285,5 +297,6 @@ The local token server is a prototype. Before shipping, port `/token` into your 
 - Where the panel component/markup lives and how it's mounted.
 - The token endpoint (real backend route, or `local-token-server/` on `:5173`).
 - Voice and turn-detection settings in effect (from the agent).
+- Whether persistence is on and why (multi-page vs SPA), and any `exclude` routes configured.
 - A reminder to gitignore the env file and port `/token` to production.
 - Pointers to [[session-runtime]] (events, commands, tool loop) and [[troubleshoot-omniagent]].
