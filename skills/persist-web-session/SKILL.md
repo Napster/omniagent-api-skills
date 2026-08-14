@@ -37,7 +37,7 @@ Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed 
 
 Some destinations must leave the frame (a real top-level navigation that ends the session):
 
-- **Cross-origin links always break out** — automatic, by design; another origin can't be framed.
+- **Links to other domains break out by default** — automatic, no configuration; that covers other sites and your own subdomains alike. The exception list is `persistence.include.domains`: domains explicitly allowed to load inside the frame so the session survives (e.g. a docs site you also run). An entry matches the host and its subdomains. Costs, per the docs: inside an included domain the SDK is blind (no break-out checks, no address-bar/history sync, session-end unwraps to your own last page), and the site must permit framing (`X-Frame-Options`/`frame-ancestors`) — a blank frame is undetectable, so test every domain you add.
 - **Same-origin routes that shouldn't be framed** — auth pages, checkout, signout — go in `exclude.urls`:
 
 ```js
