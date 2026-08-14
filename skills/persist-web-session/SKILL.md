@@ -51,6 +51,8 @@ persistence: {
 
 `urls` entries match their exact path and everything under it at **path boundaries**, not by spelling: `"/check"` matches `/check` and `/check/out` but NOT `/checkout`. End with `/` for "everything under this directory".
 
+**Redirect trap:** exclusion is checked against the *clicked* URL only. A same-origin `/login` that redirects to an external identity provider passes the check — and the auth page loads *inside the frame*. Exclude the **starting path** (`/login`), not the redirect destination.
+
 ## 4. Programmatic navigation — the one real integration task
 
 The interceptor sees what the *visitor* does — clicks and form submissions. It cannot see what *code* does: `location.assign()`, `location.href = …`, `location.replace()`, `form.submit()`, server redirects. Those end the session while a page is unframed — which only happens under `iframeOnNavigate: true`, on the landing page before the first link click. Under the default eager wrap this section matters much less, but do the sweep anyway if the developer opts into deferred mode.

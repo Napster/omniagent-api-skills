@@ -37,10 +37,10 @@ Prevention: [[create-persona]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Avatar mounts but never speaks | Mic permission denied | Grant mic access; do the `getUserMedia` preflight first |
+| Avatar mounts but never speaks | Mic permission denied | Grant mic access — the SDK shows built-in recovery guidance when the mic is blocked; a `getUserMedia` preflight before init avoids it entirely |
 | Mic prompt never appears | Insecure context | Serve over `https` or `http://localhost`, not `file://` |
 | No prompt in VS Code preview | Simple Browser blocks media | Open in Chrome/Edge/Firefox/Safari |
-| `NotAllowedError` / "Failed to access user media" | Permission blocked or no preflight | Preflight `getUserMedia`, surface a clear error UI |
+| `NotAllowedError` / "Failed to access user media" | Permission blocked or no preflight | The SDK surfaces built-in denied-mic guidance; preflight `getUserMedia` if you want your own error UI instead |
 | Avatar overflows / misaligned | Mount container not bounded | Use the `.omniagent-mount` box; don't fight the SDK with `!important` |
 | `sendCommand is not a function` | `init()` not awaited | `await NapsterCompanionApiSdk.init(...)` |
 | Session errors at connect (e.g. on the data channel) but agent creation succeeded | Invalid `voiceId` — not validated at create time | Set a supported voice from the docs and update the agent ([[create-agent]]) |

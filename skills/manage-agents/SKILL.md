@@ -63,7 +63,7 @@ curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
-Deleting an agent removes it for **all** channels — WebRTC, WebSocket, VoIP, SIP, and Kiosk.
+Deleting an agent removes it for **all** channels — WebRTC, WebSocket, VoIP, SIP, and Kiosk. Deleting also frees capacity against the organization's agent cap (100 by default — creation past it returns `409` `AgentLimitExceeded`, see [[create-agent]]).
 
 ## Channel configs vs. the agent
 

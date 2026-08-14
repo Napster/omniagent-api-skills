@@ -83,7 +83,7 @@ print(res.json()["id"])  # agent_…
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `companionId` | string | Yes | The persona that defines appearance and personality. |
-| `voiceId` | string | Yes | Speech output voice. Use a current supported value from the docs (see Prerequisites) — don't hardcode the list. |
+| `voiceId` | string | Yes, for companions | Speech output voice. Use a current supported value from the docs (see Prerequisites) — don't hardcode the list. Digital twins carry their own cloned voice ([[create-digital-twin]]). |
 | `providerSettings` | object | Yes | Model and audio settings (below). Can be `{}` to accept defaults. |
 | `name` | string | Yes | A label for the agent. |
 | `language` | string | No | ISO 639-1 code (e.g. `en`, `es`, `fr`). A plain name like `"English"` is rejected with a `400`. If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |

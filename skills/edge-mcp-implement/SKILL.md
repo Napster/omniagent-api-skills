@@ -461,10 +461,11 @@ Each tool's safety level was classified in the approved plan (the doctrine — t
 | reversible | `{}` (or `{ readOnlyHint: false }`) |
 | needs-confirmation | `{ destructiveHint: true }` |
 
-Two additional hints, set per the plan:
+Three additional hints, set per the plan:
 
 - **`idempotentHint: true`** on a needs-confirmation tool whose underlying operation tolerates safe retries (e.g. via an idempotency key on the server).
 - **`untrustedContentHint: true`** on tools whose output may contain untrusted/third-party text the model should treat as untrusted.
+- **`openWorldHint: true`** on tools that reach beyond the site itself — external systems, the open web. Most website tools are closed-world; leave it unset.
 
 **When a destructive tool is `idempotentHint: false`, offer to make it `true` — don't just flag it.** A tool tagged `idempotentHint: false` (e.g. a `placeOrder` with no server-side dedup) means a retry could double-charge or duplicate the action — but the annotation only *warns*; it doesn't fix anything. If the underlying endpoint accepts an idempotency key (many payment/order APIs do), thread a **client-generated key** through the tool so a retry dedups server-side, and then the tool honestly becomes `idempotentHint: true`. Generate the key once per intent (not once per call), so the automatic retry reuses it:
 
