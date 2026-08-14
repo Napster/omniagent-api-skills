@@ -36,7 +36,7 @@ Everything else — the folder's location and name, TypeScript vs JavaScript, fi
 **No package manager or build step?** (a server-rendered app with sprinkled scripts — Rails/Django/PHP templates — or a static no-build site): skip `npm install` and use the package's pre-bundled script-tag build instead. Load it once, version-pinned, before any registrations:
 
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@napster-corp/edge-mcp@0.1/dist/edge-mcp.iife.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@napster-corp/edge-mcp@0.3/dist/edge-mcp.iife.min.js"></script>
 ```
 
 It has the identical side effect as the import (polyfill + resource extension), and everything after it is the standard `document.modelContext` surface in plain scripts — zero imports (`registerResource` is installed on `document.modelContext` too). The invariants still hold: keep all registrations in one auditable place (e.g. a single `edge-mcp-tools.js` the pages include), one descriptor per tool, load order polyfill-first. Tell the developer you're using the script-tag path and why.

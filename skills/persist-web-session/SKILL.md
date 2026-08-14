@@ -38,13 +38,12 @@ Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed 
 Some destinations must leave the frame (a real top-level navigation that ends the session):
 
 - **Cross-origin links always break out** — automatic, by design; another origin can't be framed.
-- **Same-origin routes that shouldn't be framed** — auth/SSO, checkout, signout — go in `exclude`:
+- **Same-origin routes that shouldn't be framed** — auth pages, checkout, signout — go in `exclude.urls`:
 
 ```js
 persistence: {
   enabled: true,
   exclude: {
-    domains: ["auth.example.com"],
     urls: ["/checkout", "/signout"],  // matches at path-segment boundaries
   },
 }

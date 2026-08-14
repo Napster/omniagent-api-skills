@@ -1,17 +1,19 @@
 ---
 name: setup-api-key
-description: Get a Napster Omniagent API key from the developer dashboard and store it as the NAPSTER_API_KEY environment variable. Use when the developer is starting from scratch, hits a 401 Unauthorized, asks "how do I authenticate", "where do I get an API key", or needs to set up credentials before any other Omniagent work. The front door for new users — most other skills assume the key is already set.
+description: Get a Napster API key from the developer dashboard and store it as the NAPSTER_API_KEY environment variable. Use when the developer is starting from scratch, hits a 401 Unauthorized, asks "how do I authenticate", "where do I get an API key", or needs to set up credentials before any other Omniagent work. The front door for new users — most other skills assume the key is already set.
 ---
 
 # setup-api-key
 
-Every Omniagent API request authenticates with an API key sent in the `X-Api-Key` header. The key is a secret scoped to one organization and project. This skill gets the developer a key and stores it the right way: in an environment variable, never hardcoded.
+Every Napster API request authenticates with an API key sent in the `X-Api-Key` header. The key is a secret scoped to one organization and project. This skill gets the developer a key and stores it the right way: in an environment variable, never hardcoded.
 
-## 0. Prerequisite — a Napster Companion API resource in Azure
+## 0. Get an account
 
-Before you can reach the dashboard, your Azure subscription needs a **Napster Companion API resource**. If you've never set one up, do that first: follow [Create a Resource in Azure Portal](https://developers.napster.com/docs/guides/azure-resource). In short — in the Azure Portal, search for **Napster Companion API**, click **+ Create**, fill in subscription / resource group / name / region, create it, then **Go to Napster Companion API** to land in the Omniagent API dashboard.
+The fastest path — no Azure required: **sign up at [napster.com/developer](https://www.napster.com/developer)**. New accounts start with **$6 of free credits** (roughly 100 minutes of conversation); top up with a card or enable auto-recharge from the dashboard when they run out.
 
-If you already have the resource and can open the dashboard, skip to step 1.
+Prefer billing through an Azure subscription? Create the Azure Marketplace resource instead: follow [Create a Resource in Azure Portal](https://developers.napster.com/docs/guides/azure-resource) — in the Azure Portal, search for **Napster API**, click **+ Create**, fill in subscription / resource group / name / region, create it, then **Go to Napster API** to land in the dashboard.
+
+If you can already open the dashboard, skip to step 1.
 
 ## 1. Generate a key in the dashboard
 

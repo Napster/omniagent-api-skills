@@ -17,7 +17,7 @@ There is no "deploy to web" API call. You deploy by (1) standing up a server-sid
 
 The browser must never hold the API key. A server-side endpoint calls the API and returns a short-lived token. **Ask the developer how they want to handle it — don't assume:**
 
-> To use the SDK in the browser you need a small server-side endpoint that calls the Omniagent API for a short-lived connection token. Your API key stays on the server; the browser only sees the token. How do you want to handle that?
+> To use the SDK in the browser you need a small server-side endpoint that calls the Napster API for a short-lived connection token. Your API key stays on the server; the browser only sees the token. How do you want to handle that?
 >
 > 1. **I already have a backend** — add the token endpoint to it.
 > 2. **I don't have a backend yet** — drop in a local Node script to prototype, move it to production later.
@@ -78,7 +78,7 @@ npm install @touchcastllc/napster-companion-api @reduxjs/toolkit
 
 ```js
 import { NapsterCompanionApiSdk } from "@touchcastllc/napster-companion-api";
-import "@touchcastllc/napster-companion-api/lib/index.css";
+import "@touchcastllc/napster-companion-api/styles";
 ```
 
 `@reduxjs/toolkit` is a peer dependency — install it alongside.
@@ -130,7 +130,7 @@ React example (bundler import path):
 ```tsx
 import { useEffect, useRef } from "react";
 import { NapsterCompanionApiSdk } from "@touchcastllc/napster-companion-api";
-import "@touchcastllc/napster-companion-api/lib/index.css";
+import "@touchcastllc/napster-companion-api/styles";
 
 export function OmniagentPanel() {
   const mountRef = useRef<HTMLDivElement>(null);

@@ -94,6 +94,21 @@ You can't place a phone call yourself — hand this step to the developer: **pla
 
 Use this when you already run a SIP trunk. You manage three resources: the **agent**, a **SIP channel config**, and one or more **SIP connections** (your trunk credentials). One agent can back several connections (e.g. multiple numbers).
 
+### 0. Request SIP quota (once per organization)
+
+SIP connections require dedicated capacity and the default quota is **0** — creating a connection with no quota fails. Request capacity first and wait for approval:
+
+```bash
+curl -X POST https://companion-api.napster.com/public/quota-requests \
+  -H "X-Api-Key: $NAPSTER_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "quotaType": "sipPods",
+    "requestedValue": 2,
+    "reason": "Production SIP deployment for customer support line"
+  }'
+```
+
 ### 1. Register the SIP channel
 
 Required even without human handoff — it registers the SIP channel for the agent. `PUT` creates or updates it.
@@ -213,6 +228,7 @@ If a developer asks for human handoff on VoIP today, route them to the SIP path 
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | (VoIP) Number rings but agent doesn't answer | Webhook not set, or set on the wrong number | Set `voipEndpoint` as the "A call comes in" webhook for that number in Twilio |
+| (SIP) Connection creation rejected | SIP quota is 0 (the default) | Request capacity: `POST /public/quota-requests` with `quotaType: "sipPods"` (step 0) |
 | (SIP) `sipStatus` stuck on `registering` | Bad credentials / wrong transport | Check `/errors`; `401` = credentials; verify server/domain/transport |
 | (SIP) `lifecycleStatus: Failed` | Listener couldn't start | Read `status.message`; recheck `settings` |
 | (SIP) Calls ring but agent doesn't answer | Number not routed to the trunk | Fix provider-side routing to the SIP endpoint |

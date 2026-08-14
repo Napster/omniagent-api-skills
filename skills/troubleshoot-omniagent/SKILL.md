@@ -1,11 +1,11 @@
 ---
 name: troubleshoot-omniagent
-description: Diagnose and fix problems with the Napster Omniagent API across every channel. Use when the developer reports something broken — "401 / unauthorized", "no audio", "mic not working", "the avatar won't load", "the agent won't call my function", "persona stuck pending", "SIP won't register", "session won't connect", "iframe blocks the mic", or "it works locally but not in production". Organized by area so you can jump to the symptom. Cross-links to the skill that prevents each problem.
+description: Diagnose and fix problems with the Napster API across every channel. Use when the developer reports something broken — "401 / unauthorized", "no audio", "mic not working", "the avatar won't load", "the agent won't call my function", "persona stuck pending", "SIP won't register", "session won't connect", "iframe blocks the mic", or "it works locally but not in production". Organized by area so you can jump to the symptom. Cross-links to the skill that prevents each problem.
 ---
 
 # troubleshoot-omniagent
 
-The pitfall index for the Omniagent API, organized by area. Find the area, scan the symptom-to-fix table, then follow the cross-link to the skill that gets it right the first time.
+The pitfall index for the Napster API, organized by area. Find the area, scan the symptom-to-fix table, then follow the cross-link to the skill that gets it right the first time.
 
 When this skill and the live docs disagree, **the docs win** — re-check with the docs MCP server (`fetch-page`, `get-api-spec`) and the Swagger at `https://companion-api.napster.com`.
 
