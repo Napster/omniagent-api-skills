@@ -189,7 +189,7 @@ Once a SIP connection is registered (`sipStatus: online`), the agent can dial ou
 ```bash
 curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_abc123/call \
   -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" \
-  -d '{ "destination": "+15551234567", "initialSpeech": "Hi, this is Ava from Acme — calling about your order." }'
+  -d '{ "destination": "15551234567", "initialSpeech": "Hi, this is Ava from Acme — calling about your order." }'
 # { "status": "dialing" }
 ```
 

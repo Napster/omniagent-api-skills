@@ -42,6 +42,8 @@ Use the [[create-agent]] skill. Combine the persona ID with a `voiceId` and sens
 
 Ask whether the agent needs to take actions, not just talk — look something up, book something, call their backend. If yes, use the [[create-tool]] skill, then attach the tool IDs to the agent you built in Step 4 by updating its `functions` with a `PATCH` ([[manage-agents]]). If no, skip.
 
+If the capability already exists as a service — a vendor's MCP server, or the user's Gmail, Calendar, Drive or SharePoint — use [[add-mcp-servers]] instead and attach it with `mcp`. Nothing to define, nothing to execute.
+
 ## Step 6 — Knowledge (optional)
 
 Ask whether the agent should answer from their documents or curated FAQs. If yes, use the [[add-knowledge]] skill, then attach `knowledgeBaseId` / `faqCollections` to the agent from Step 4 with a `PATCH` ([[manage-agents]]). If no, skip.

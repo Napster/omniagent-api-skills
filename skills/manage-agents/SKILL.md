@@ -23,7 +23,7 @@ curl https://companion-api.napster.com/public/agents/agent_abc123 \
 
 ## Update an agent
 
-`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`. Changes apply to every channel using the agent.
+`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `mcp`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`. Changes apply to every channel using the agent.
 
 ```bash
 curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
@@ -53,7 +53,7 @@ requests.patch(
 ```
 
 <Callout type="warn">
-Updating `functions`, `faqCollections`, or `knowledgeBaseId` replaces the value — it is not a merge. To add one tool, send the full intended array, not just the new ID.
+Updating `functions`, `mcp`, `faqCollections`, or `knowledgeBaseId` replaces the value — it is not a merge. To add one tool, send the full intended array, not just the new ID. The same applies to `mcp` ([[add-mcp-servers]]): send the whole object, both `servers` and `connectors`.
 </Callout>
 
 ## Delete an agent
