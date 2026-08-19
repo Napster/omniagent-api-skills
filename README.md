@@ -179,6 +179,7 @@ omniagent-api-skills/
 │   ├── create-agent/                   Assemble a deployable Omniagent from a persona
 │   ├── manage-agents/                  List, update, delete Omniagents
 │   ├── create-tool/                    Define a function the agent can call mid-conversation
+│   ├── add-mcp-servers/                Attach a remote MCP server or a ready-made connector
 │   ├── add-knowledge/                  Upload files, define FAQs, attach to an agent
 │   ├── deploy-webrtc/                  Web channel: browser audio + video via the Web SDK
 │   ├── deploy-websocket/              Audio or text channel for headless/custom clients

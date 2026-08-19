@@ -88,6 +88,7 @@ print(res.json()["id"])  # agent_…
 | `name` | string | Yes | A label for the agent. |
 | `language` | string | No | ISO 639-1 code (e.g. `en`, `es`, `fr`). A plain name like `"English"` is rejected with a `400`. If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |
 | `functions` | string[] | No | Tool IDs to attach. See [[create-tool]]. |
+| `mcp` | object | No | Tools from remote MCP servers: `{ "servers": [...], "connectors": [...] }`. See [[add-mcp-servers]]. |
 | `faqCollections` | string[] | No | FAQ collection IDs. See [[add-knowledge]]. |
 | `knowledgeBaseId` | string | No | Knowledge collection ID. See [[add-knowledge]]. |
 | `disableIdleTimeout` | boolean | No | Keep sessions open indefinitely instead of auto-closing on idle. |
@@ -137,6 +138,7 @@ The same agent serves all channels at once — deploy to one now, add more later
 
 ## Next steps
 
+- Give it tools from an existing service instead of writing your own: [[add-mcp-servers]].
 - Manage it later: [[manage-agents]].
 - Deploy it: [[deploy-webrtc]] / [[deploy-websocket]] / [[deploy-phone]].
 - Per-session behavior, events, and commands: [[session-runtime]].

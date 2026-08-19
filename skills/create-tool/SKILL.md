@@ -7,6 +7,8 @@ description: Define a function (tool) the Omniagent can call mid-conversation �
 
 A tool (function) lets the agent act during a session — query an order, book an appointment, log an event. You create a tool once with `POST /public/functions`, then attach its ID to an agent's `functions` array ([[create-agent]]). Tools are reusable across agents.
 
+**If the capability already exists as an MCP server** — a vendor's server, or Gmail/Calendar/Drive-style access — attach it with [[add-mcp-servers]] instead. You define no schema and execute no calls.
+
 ## Execution flow — choose one per tool
 
 | Flow | Where the call is delivered | Use when |
@@ -204,5 +206,6 @@ curl -X DELETE https://companion-api.napster.com/public/functions/fn_abc123 -H "
 ## Next steps
 
 - Attach the tool: [[create-agent]] or [[manage-agents]].
+- Use an existing service's tools instead of writing your own: [[add-mcp-servers]].
 - Handle implicit calls at runtime: [[session-runtime]].
 - Function-calling pitfalls: [[troubleshoot-omniagent]] § Function calling.
