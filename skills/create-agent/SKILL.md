@@ -14,8 +14,8 @@ Creating the agent does not make it reachable. End users reach it only after you
 ## Prerequisites
 
 - A persona ID (`companionId`). If you don't have one, route to [[create-persona]].
-- A voice ID. Required. **Don't hardcode or guess the list — it changes.** Fetch the current supported voices from the docs before choosing one: the docs MCP server `fetch-page` slug `building-your-omniagent/configuration` (the Voice section), or `get-overview`. The examples below use a placeholder value; substitute a voice from that list. Note: an invalid voice is **not** rejected when you create the agent — `POST /public/agents` succeeds regardless. It's caught later, when you open a connection: that call now returns a `400` with a descriptive reason (an unsupported `voiceId`, malformed provider credentials, or a companion that isn't ready). Get the voice right up front so the connection isn't rejected.
-- Optionally: tool IDs ([[create-tool]]), a knowledge base ID and/or FAQ collection IDs ([[add-knowledge]]).
+- A voice ID. Required. **Don't hardcode or guess the list — it changes.** Fetch the current supported voices from the docs before choosing one: the docs MCP server `fetch-page` slug `building-your-omniagent/configuration` (the Voice section), or `get-overview`. The examples below use a placeholder value; substitute a voice from that list. Note: an invalid voice is **not** rejected when you create the agent — `POST /public/agents` succeeds regardless. Problems surface later, at one of two points. **When you create the connection**, the API returns a `400` for what it can check itself: a missing `voiceId`, a digital twin whose cloned voice isn't ready, or a tool / FAQ collection / MCP server that doesn't exist. **After the client connects**, the AI provider checks the rest: an unrecognized voice, rejected credentials, or instructions that are too long. The connection request succeeds, then the client receives a `provider_connection_aborted` event (`error.code`: `invalid_voice`, `invalid_credentials`, `instructions_too_long`, `connection_failed`) and the session closes. Get the voice right up front, and handle that event in your client.
+- Optionally: tool IDs ([[create-tool]]), a knowledge base ID and/or one FAQ collection ID ([[add-knowledge]]).
 
 ## Create the agent
 
@@ -89,15 +89,16 @@ print(res.json()["id"])  # agent_…
 | `language` | string | No | ISO 639-1 code (e.g. `en`, `es`, `fr`). A plain name like `"English"` is rejected with a `400`. If set, the agent stays in that language. If omitted, defaults to English but can switch on request. |
 | `functions` | string[] | No | Tool IDs to attach. See [[create-tool]]. |
 | `mcp` | object | No | Tools from remote MCP servers: `{ "servers": [...], "connectors": [...] }`. See [[add-mcp-servers]]. |
-| `faqCollections` | string[] | No | FAQ collection IDs. See [[add-knowledge]]. |
+| `faqCollections` | string[] | No | The ID of **one** FAQ collection — more than one returns `400` ("At most 1 FAQ collection can be attached."). See [[add-knowledge]]. |
 | `knowledgeBaseId` | string | No | Knowledge collection ID. See [[add-knowledge]]. |
-| `disableIdleTimeout` | boolean | No | Keep sessions open indefinitely instead of auto-closing on idle. |
+| `disableIdleTimeout` | boolean | No | By default a session closes after **3 minutes** without audio or messages (`closeReason: "idle_timeout"`, with `avatar_connection_warning` at 60/30/10 s). Set `true` to keep sessions open indefinitely. |
 | `useWebSearch` | boolean | No | Let the agent search the web during conversations. Defaults to `true`; set `false` to keep it to its provided knowledge only. |
+| `mode` | string | No | `conversation` (default) or `puppeteer` — the agent speaks only the lines your client sends with the `talk` command. Puppeteer needs a Cascade API key (`400 UnsupportedSessionMode` otherwise; a Cascade key with only text-to-speech is enough) and can't use SIP/VoIP (`400 TelephonyChannelNotAllowed`). Can also be set per session on `POST /public/connections` / `POST /public/ws-connections`. See [[session-runtime]]. |
 | `tags` | object | No | String key-value labels, returned on every session for filtering. |
 
 ### Provider settings
 
-`providerSettings` controls model behavior and audio processing (OpenAI Realtime):
+`providerSettings` controls model behavior and audio processing. All fields apply on a **Realtime** key. On a **Cascade** key, `instructions` works, `turnDetection` applies only at session start, and `temperature` / `noiseReduction` are ignored.
 
 | Field | Type | Notes |
 |---|---|---|
@@ -112,7 +113,7 @@ Recommended turn-detection defaults for voice — the API defaults are too trigg
 { "threshold": 0.9, "prefix_padding_ms": 400, "silence_duration_ms": 500 }
 ```
 
-If the agent still interrupts itself, raise `threshold` toward `0.95` or `silence_duration_ms` toward `800`. See [[session-runtime]] for tuning these live with `set_settings`.
+If the agent still interrupts itself, raise `threshold` toward `0.95` or `silence_duration_ms` toward `800`. See [[session-runtime]] for tuning these live with `set_settings` (Realtime only — on Cascade, `set_settings` changes only `instructions` and inline tools).
 
 ## After creating
 
@@ -129,11 +130,12 @@ The same agent serves all channels at once — deploy to one now, add more later
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `400` when opening a connection (unsupported `voiceId`, bad provider creds, companion not ready) | Invalid settings are **not** validated at agent creation — only when a connection is created | Fix the flagged setting (e.g. a supported voice from `building-your-omniagent/configuration`), update the agent, then reconnect |
+| Session closes right after connecting with `provider_connection_aborted` (`invalid_voice` / `invalid_credentials` / `instructions_too_long`) | Voice, credentials, and instruction length aren't validated at agent creation or connection creation — the provider checks them when the session starts | Fix the voice (a supported value from `building-your-omniagent/configuration`) or the key's credentials, update the agent, and open a new session |
 | `400` missing `providerSettings` | Field omitted | Required — send `{}` to accept defaults |
 | `409` code `AgentLimitExceeded` | Organization at its agent cap (100 by default) | Delete unused agents ([[manage-agents]]) or ask Napster to raise the org's limit |
 | Agent ignores attached tool | Tool ID not in `functions` | Add the ID; creating a tool does not auto-attach it ([[create-tool]]) |
-| Knowledge not used | Wrong/empty `knowledgeBaseId` or provider mismatch | One collection per session; provider must match ([[add-knowledge]]) |
+| Knowledge not used | Wrong/empty `knowledgeBaseId` | One collection per session; create collections with `provider: "azureOpenAI"` — they work on Realtime and Cascade keys ([[add-knowledge]]) |
+| `400` on `faqCollections` "At most 1 FAQ collection can be attached." | More than one FAQ collection ID | Merge the pairs into one collection (max 50 pairs) |
 | Agent won't switch language | `language` was set | Setting `language` locks it; omit to allow switching |
 
 ## Next steps

@@ -14,7 +14,7 @@ There are two ways to wire up the phone. **If the developer doesn't say which, d
 | **VoIP** (default) | Napster exposes a **webhook endpoint** for the agent. You register it with Twilio (the only supported VoIP provider) for a phone number; on an incoming call Twilio calls the webhook to connect the caller to the agent. Twilio owns the number and the telephony — Napster only provides the webhook. No trunk credentials. **Human handoff is not yet supported on this path.** | Most cases — fastest way to get the agent on a number. |
 | **SIP** | You bring your own SIP trunk (a PBX or any SIP trunk provider) and hand Napster credentials to register against it. Supports human handoff. | You already run a SIP trunk, need the agent on existing telephony, or need human handoff. |
 
-Both attach to the **same agent** — create it once ([[create-agent]]); a clear persona and a set `language` help on voice-only calls. Unlike WebRTC/WebSocket (created per session), the phone channel is a **persistent** config: set it once and the agent answers until you remove it.
+Both attach to the **same agent** — create it once ([[create-agent]]); a clear persona and a set `language` help on voice-only calls. Unlike WebRTC/WebSocket (created per session), the phone channel is a **persistent** config: set it once and the agent answers until you remove it. Agents in `mode: "puppeteer"` can't use phone channels — adding a SIP or VoIP channel config returns `400 TelephonyChannelNotAllowed`.
 
 ---
 
@@ -68,7 +68,7 @@ res = requests.put(
 print(res.json()["voipEndpoint"])
 ```
 
-You can also pass `functions`, `faqCollections`, `knowledgeBaseId`, and `providerSettings` to make the agent behave differently on calls than on web (for example a longer `silence_duration_ms` for phone-quality audio). Omit them to inherit the agent's defaults.
+You can also pass `functions`, `faqCollections` (at most one collection ID), `knowledgeBaseId`, `useWebSearch`, and `providerSettings` to make the agent behave differently on calls than on web (for example a longer `silence_duration_ms` for phone-quality audio). Omit them to inherit the agent's defaults. MCP servers don't apply on phone calls — the agent has no MCP tools on VoIP or SIP.
 
 <Callout type="warn">
 **Human handoff is not available on VoIP today** — it's a SIP-only capability for now (expected to come to VoIP later). If the developer needs the agent to transfer a caller to a human, use the SIP path below. Don't set `humanHandoff` on the `voip` channel config.
@@ -86,7 +86,7 @@ Twilio calls `voipEndpoint` on every inbound call, so treat the URL as sensitive
 
 ### 3. Verify
 
-You can't place a phone call yourself — hand this step to the developer: **place a real test call** to the number and confirm the agent answers and responds. Afterward, the call can be reviewed via [[monitor-sessions]] (`sessionType` will reflect the phone channel) — that part you can check.
+You can't place a phone call yourself — hand this step to the developer: **place a real test call** to the number and confirm the agent answers and responds. Afterward, the call can be reviewed via [[monitor-sessions]] (`sessionType` will reflect the phone channel) — that part you can check. SIP calls also carry `direction` (`inbound`/`outbound`) and `sipConnection` (`{ id, name }`). Phone calls can't be ended through `DELETE /public/connections/{id}` (`400 ConnectionAbortNotSupported`).
 
 ---
 
@@ -120,13 +120,12 @@ curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channel
   -d '{
     "humanHandoff": {
       "enabled": true,
-      "transferExtension": "200",
-      "transferDescription": "Transfer the caller to a human operator when, in the current call, they explicitly ask to be connected to a person — for example by saying \"person,\" \"agent,\" \"operator,\" \"manager,\" \"supervisor,\" or \"representative.\" Do not transfer when the caller asks a question you can still answer. Before calling this function, briefly confirm the request (\"You'd like me to connect you with someone — is that right?\") and wait for a clear yes. Then tell the caller you are transferring them now and ask them to hold."
+      "transferExtension": "200"
     }
   }'
 ```
 
-Same optional overrides as VoIP (`functions`, `faqCollections`, `knowledgeBaseId`, `providerSettings`).
+Same optional overrides as VoIP (`functions`, `faqCollections` — at most one ID, `knowledgeBaseId`, `useWebSearch`, `providerSettings`); MCP servers don't apply on SIP either.
 
 ### 2. Create a SIP connection
 
@@ -193,7 +192,7 @@ curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_ab
 # { "status": "dialing" }
 ```
 
-`destination` is required; `initialSpeech` (optional) is what the agent says the moment the call is answered — without it, the agent opens with its default greeting behavior. The conversation lands in sessions ([[monitor-sessions]]) like any other SIP call. VoIP remains inbound-only.
+`destination` is required — `+` followed by 7–15 digits, or up to 15 digits; digits only (no spaces, `*`/`#` codes, or SIP URIs). `initialSpeech` (optional) is what the agent says the moment the call is answered — without it, the agent opens with its default greeting behavior. The call lands in sessions ([[monitor-sessions]]) with `direction: "outbound"`; an unanswered call is `failed` with `closeReason` `no_answer` or `rejected`. VoIP remains inbound-only.
 
 ### Managing SIP connections
 
@@ -209,19 +208,19 @@ curl -X DELETE https://companion-api.napster.com/public/sip-connections/sipconn_
 
 ## Human handoff (SIP only, for now)
 
-Human handoff is available on the **SIP path only** today. VoIP support is expected later. Set it on the SIP channel config (`PUT /public/agents/{id}/channels/sip`). When `enabled` with a `transferExtension`, the agent can transfer the caller. `transferDescription` is not a label — the agent reads it to decide *when* to transfer and *what to say* first.
+Human handoff is available on the **SIP path only**. Set it on the SIP channel config (`PUT /public/agents/{id}/channels/sip`). When `enabled`, the agent tells the caller it's transferring them, then hands the call to an extension. `transferExtension` is **required** when `enabled` is `true` or `routes` is set — it's the default destination. Extensions are digits only: `+` followed by 7–15 digits, or up to 15 digits.
 
-**Use this as your default `transferDescription`:**
+To send callers to different teams, add up to 10 `routes`, each an `extension` (same format, unique across routes) plus a plain-language `purpose` (≤ 200 characters):
 
-> Transfer the caller to a human operator when, in the current call, they explicitly ask to be connected to a person — for example by saying "person," "agent," "operator," "manager," "supervisor," or "representative." Do not transfer when the caller asks a question you can still answer. Before calling this function, briefly confirm the request ("You'd like me to connect you with someone — is that right?") and wait for a clear yes. Then tell the caller you are transferring them now and ask them to hold.
+```json
+{ "humanHandoff": { "enabled": true, "transferExtension": "200",
+  "routes": [
+    { "extension": "210", "purpose": "Billing questions, invoices, and refunds" },
+    { "extension": "220", "purpose": "Technical support for devices and connectivity" }
+  ] } }
+```
 
-Why this specific wording matters — **the trigger must require an explicit user ask**:
-
-<Callout type="warn">
-A vague `transferDescription` (e.g. "transfer when needed") can cause the agent to fire the handoff immediately at the start of a **new** call when cross-session memory is on (`externalClientId`). The agent recalls a prior session that ended in a handoff and interprets that recall as a trigger, transferring the caller before they've even said anything. Anchoring the trigger to an **explicit current-call request** ("when they explicitly ask to speak with a real person") prevents that — past memories alone are no longer enough to fire the function.
-</Callout>
-
-If a developer asks for human handoff on VoIP today, route them to the SIP path or note that VoIP support is coming later.
+The agent uses the route whose `purpose` clearly matches what the caller needs; otherwise it transfers to `transferExtension`. On other channels `humanHandoff` is ignored — if a developer asks for handoff on VoIP, route them to SIP.
 
 ## Common errors
 
@@ -232,7 +231,8 @@ If a developer asks for human handoff on VoIP today, route them to the SIP path 
 | (SIP) `sipStatus` stuck on `registering` | Bad credentials / wrong transport | Check `/errors`; `401` = credentials; verify server/domain/transport |
 | (SIP) `lifecycleStatus: Failed` | Listener couldn't start | Read `status.message`; recheck `settings` |
 | (SIP) Calls ring but agent doesn't answer | Number not routed to the trunk | Fix provider-side routing to the SIP endpoint |
-| (SIP) Agent never transfers | Handoff disabled or vague description | Enable handoff on the SIP channel config; write a specific `transferDescription` |
+| (SIP) Agent never transfers | Handoff disabled or no `transferExtension` | Set `enabled: true` and `transferExtension` on the SIP channel config |
+| (SIP) Calls land on the default extension, not a team | No route's `purpose` clearly matches | Make each `purpose` a specific description of the requests that line handles |
 | (VoIP) Need human handoff | Not supported on VoIP today | Use the SIP path; VoIP handoff is expected later |
 | Agent talks over the caller | Phone-side VAD too sensitive | Raise `silence_duration_ms` via the channel `providerSettings` override |
 

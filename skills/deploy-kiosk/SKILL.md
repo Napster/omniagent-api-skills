@@ -55,7 +55,7 @@ requests.put(
 | `url` | The hosted URL of that experience. |
 | `initialSpeech` | How the agent opens with each visitor (an instruction, not a verbatim line). |
 | `functions` | Use different tools on the kiosk than on other channels. |
-| `faqCollections` | Use different FAQs on the kiosk. |
+| `faqCollections` | Use a different FAQ collection on the kiosk (at most one ID). |
 | `knowledgeBaseId` | Use a different knowledge base on the kiosk. |
 | `providerSettings` | Override temperature, turn detection, and noise reduction for the room. |
 | `useWebSearch` | Enable or disable web search on the kiosk. |
@@ -74,6 +74,15 @@ curl https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk
 curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
+
+To end a live kiosk conversation from your backend (for example, to free the Station for the next visitor):
+
+```bash
+curl -X DELETE https://companion-api.napster.com/public/connections/$CONNECTION_ID \
+  -H "X-Api-Key: $NAPSTER_API_KEY"
+```
+
+The session closes with `closeReason: "connection_aborted"`.
 
 ## Verify
 

@@ -1,8 +1,8 @@
-# Napster Omniagent API — Skills
+# Napster API — Skills
 
-The official Claude Code plugin **and** Agent Skills package for the [Napster Omniagent API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a set for agentifying your own website (WebMCP / Edge MCP — expose its real operations and live state so any compatible agent, your Omniagent included, can operate it), a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
+The official Claude Code plugin **and** Agent Skills package for the [Napster API](https://developers.napster.com). It gives an AI coding agent a focused skill for every API concept — personas, agents, tools, knowledge, and every deployment channel (web, audio, phone) — plus a set for agentifying your own website (WebMCP / Edge MCP — expose its real operations and live state so any compatible agent, your Omniagent included, can operate it), a framework-agnostic default panel the skill adapts to your stack, and an optional local token server for prototyping. The skills are grounded in the live documentation through the bundled Napster docs MCP server, so they stay current instead of drifting from training data.
 
-**Where it runs:** the 19 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
+**Where it runs:** the 20 skills (and the bundled MCP docs server) work in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others — installed via `npx skills add napster/omniagent-api-skills`. The guided **`/omniagent-quickstart`** wizard is a Claude Code slash command, so the wizard itself is Claude-Code-only; the skills it orchestrates run anywhere.
 
 ## After install, start here
 
@@ -87,7 +87,7 @@ Use your tool's standard MCP HTTP server configuration with:
 
 ### Agent skills
 
-Napster publishes open-source skills for coding agents that provide architectural guidance and best practices for building Omniagents — covering workflow design, channel configuration, tool integration, and deployment patterns. Combined with the MCP server, skills give your coding agent deep expertise about building with the Omniagent API so it can look up the docs, understand the architecture, and generate code that follows best practices.
+Napster publishes open-source skills for coding agents that provide architectural guidance and best practices for building Omniagents — covering workflow design, channel configuration, tool integration, and deployment patterns. Combined with the MCP server, skills give your coding agent deep expertise about building with the Napster API so it can look up the docs, understand the architecture, and generate code that follows best practices.
 
 Works in any tool that follows the [open Agent Skills spec](https://agentskills.io/specification) — Claude Code, Cursor, Codex, OpenCode, and others. In your project root:
 
@@ -125,13 +125,13 @@ To update to the latest version later:
 
 Third-party marketplaces don't auto-update by default in Claude Code, so this manual refresh is how you'll get new skills, MCP changes, or bug fixes. (You can enable auto-update per marketplace via `/plugin → Marketplaces → Enable auto-update` if you prefer that workflow.)
 
-After install you'll have `/omniagent-quickstart` and all 17 skills auto-triggering on natural language.
+After install you'll have `/omniagent-quickstart` and all 20 skills auto-triggering on natural language.
 
 #### Claude (browser and desktop chat product)
 
 For the browser version (claude.ai) and the Mac/Windows desktop app, you need to download the plugin manually first.
 
-**Step 1 — Download the plugin.** Go to the [Napster Omniagent API Skills repo](https://github.com/Napster/omniagent-api-skills), click the green **Code** button, and select **Download ZIP**. Save the file to your machine.
+**Step 1 — Download the plugin.** Go to the [Napster API Skills repo](https://github.com/Napster/omniagent-api-skills), click the green **Code** button, and select **Download ZIP**. Save the file to your machine.
 
 Skills installed from a ZIP **won't update automatically**. If we publish new skills, you'll need to re-download and re-upload. The Claude Code CLI handles updates for you.
 
@@ -151,7 +151,7 @@ In Claude (desktop, Mac/Windows): same flow as above through the desktop app's *
 
 Once installed, the plugin gives your coding agent:
 
-- Access to the full Omniagent API documentation via MCP
+- Access to the full Napster API documentation via MCP
 - Architectural guidance for building Omniagents
 - A quickstart wizard that walks you through creating your first agent
 
@@ -187,7 +187,7 @@ omniagent-api-skills/
 │   ├── deploy-kiosk/                   In-person channel — a Napster Station (gated)
 │   ├── persist-web-session/            Keep one session alive across page loads on multi-page sites
 │   ├── session-runtime/                Per-session config, server events, client commands
-│   ├── monitor-sessions/               List sessions, pull transcripts
+│   ├── monitor-sessions/               List, inspect, and delete sessions; pull transcripts; webhooks
 │   ├── edge-mcp-setup/                 Agentify your website — the orchestrator that runs the four skills below
 │   ├── edge-mcp-plan/                  Plan what an agent can DO and SEE on your site
 │   ├── edge-mcp-implement/             Build the approved plan — register tools + live state, verify at runtime

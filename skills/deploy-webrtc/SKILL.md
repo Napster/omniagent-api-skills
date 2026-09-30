@@ -36,6 +36,7 @@ app.post("/api/token", async (req, res) => {
       body: JSON.stringify({ channelType: "webrtc" }), // optionally externalClientId, externalClientProfile
     },
   );
+  if (r.status === 429) return res.status(429).set("Retry-After", r.headers.get("Retry-After") ?? "1").end(); // 1 req/s per API key
   if (!r.ok) return res.status(502).json({ error: await r.text() });
   res.json(await r.json()); // { token, connection: { id, … } }
 });
@@ -155,6 +156,7 @@ export function OmniagentPanel() {
       // 3. Init — AWAIT it.
       instanceRef.current = await NapsterCompanionApiSdk.init(token, {
         mountContainer: mountRef.current,
+        layout: "inline",                    // fill .omniagent-mount
         className: "omniagent-sdk-root",     // styling hook — see "Fitting the SDK" below
         avatarStyle: { view: "rectangle" },  // matches the omniagent-panel-reference layout
         onData: handleData,
@@ -199,6 +201,7 @@ Plain HTML / standalone global:
     const { token } = await res.json();
     const instance = await window.napsterCompanionApiSDK.init(token, {
       mountContainer: "#omniagent-mount",
+      layout: "inline",                    // fill .omniagent-mount
       className: "omniagent-sdk-root",     // styling hook — see "Fitting the SDK" below
       avatarStyle: { view: "rectangle" },  // matches the omniagent-panel-reference layout
       onData: handleData,
@@ -214,11 +217,13 @@ Key points the docs call out:
 - **`await` init.** Without it you hold a Promise, not the instance; every method throws.
 - **`mountContainer`** accepts a DOM element or a selector string.
 - Pass **`onData`** to receive every server event (see [[session-runtime]] for the event names, the greeting nudge, and the function-call loop).
+- **A successful token call doesn't mean a valid session.** An unknown voice, bad provider credentials, or over-long instructions aren't a 400 at connection creation — they arrive in `onData` as `provider_connection_aborted` (`error.code` `invalid_voice` / `invalid_credentials` / `instructions_too_long` / `connection_failed`) after the SDK connects, and the session closes. Handle it, plus `avatar_connection_warning`, `session_expired` and `no_credits_left`, so the panel shows a reason instead of going dead.
 - **Fitting the SDK into your own layout.** The mount container (`.omniagent-mount`) has its own visual layout — bounded size, rounded corners, panel chrome. To make the SDK fill that space cleanly without overflow or alignment issues, you need **both** of these together (the init samples above already include them):
 
   ```js
   await NapsterCompanionApiSdk.init(token, {
     mountContainer: mountRef.current,
+    layout: "inline",                    // fill .omniagent-mount
     className: "omniagent-sdk-root",     // styling hook attached to the SDK
     avatarStyle: { view: "rectangle" },  // matches the panel layout
     onData: handleData,
@@ -290,7 +295,7 @@ The two settings have to be in sync. If the server sends a green-screened stream
 
 ## 8. Production
 
-The local token server is a prototype. Before shipping, port `/token` into your backend with: per-user **authentication**, **rate limiting**, and per-session context (`externalClientId` / `externalClientProfile`) resolved from the signed-in user. The browser's `fetch('/token')` line doesn't change. The API key never reaches the browser.
+The local token server is a prototype. Before shipping, port `/token` into your backend with: per-user **authentication**, **rate limiting** (the Napster API allows 1 connection request per second per API key, shared by `POST /public/connections`, `/ws-connections`, `/agents/{id}/connections` and `DELETE /public/connections/{id}` — on `429`, honor `Retry-After`), and per-session context resolved from the signed-in user (`externalClientId` must match `^[A-Za-z0-9_-]{1,32}$` — hash UUIDs or emails — plus `externalClientProfile`). To end a live session from your backend (plan ran out, user signed out), call `DELETE /public/connections/{connection.id}`; it closes with `closeReason: "connection_aborted"`. The browser's `fetch('/token')` line doesn't change. The API key never reaches the browser.
 
 ## Hand back to the developer
 

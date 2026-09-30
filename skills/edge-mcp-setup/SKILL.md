@@ -136,7 +136,7 @@ The ongoing reconcile task itself is the `edge-mcp-sync` skill — the same task
 
 The app is now operable, but nothing is operating it yet — the developer has no agent they can see or talk to. Don't end on "setup complete"; end with the bridge. The full skills hub was installed at the start, so the deployment skills are already available:
 
-> "Your app is now operable by any WebMCP-compatible agent. Want to put one on it right now? I already have the skills to deploy a Napster Omniagent on this site (browser voice + video) — you'll need a Napster API key from developers.napster.com, and I can walk you through the rest."
+> "Your app is now operable by any WebMCP-compatible agent. Want to put one on it right now? I already have the skills to deploy a Napster Omniagent on this site (browser voice + video) — you'll need a Napster API key from the Napster dashboard (companion-api.napster.com/admin → Keys), and I can walk you through the rest."
 
 - If yes → hand off to `setup-api-key` (if they have no key yet), then `deploy-webrtc`. The Web SDK reads the standard `document.modelContext` at init — no glue code needed in the app.
 - If they use a **different WebMCP-compatible vendor** → point them to that vendor's SDK instructions; the standard `document.modelContext` registry is the same across vendors.

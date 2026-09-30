@@ -7,7 +7,7 @@ description: Define a function (tool) the Omniagent can call mid-conversation �
 
 A tool (function) lets the agent act during a session — query an order, book an appointment, log an event. You create a tool once with `POST /public/functions`, then attach its ID to an agent's `functions` array ([[create-agent]]). Tools are reusable across agents.
 
-**If the capability already exists as an MCP server** — a vendor's server, or Gmail/Calendar/Drive-style access — attach it with [[add-mcp-servers]] instead. You define no schema and execute no calls.
+**If the capability already exists as an MCP server** — a vendor's server, or Gmail/Calendar/Drive-style access — attach it with [[add-mcp-servers]] instead. You define no schema and execute no calls. (MCP needs a Realtime API key — not Cascade — and doesn't run on VoIP or SIP.)
 
 ## Execution flow — choose one per tool
 
@@ -94,6 +94,8 @@ print(res.json()["id"])  # fn_…
 
 Implicit (client-side) tools drop the `url` and set `"flow": "implicit"`. Your client handles the call — see [[session-runtime]] for the `function_implicitly_called` / `send_function_output` event loop.
 
+Need a tool for one session only? Register it mid-session with `set_settings` → `inline_functions` (implicit tools or explicit `http(s)` tools; Realtime and Cascade keys) — see [[session-runtime]].
+
 ### Fields
 
 | Field | Required | Description |
@@ -147,7 +149,7 @@ Sequencing: `Only call after the user has provided name, date, and time.` / `Onl
 
 ### Long-running work — beat the timeout, answer later
 
-Tool calls time out after **10 seconds** (the model then receives "Failed to fetch information"). If the real work can't finish that fast, don't block on it: **respond to the tool call immediately** with an interim acknowledgment — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }` — then deliver the real outcome when it's ready. HOW you deliver it depends on the tool type (not the session channel):
+Tool calls time out after **10 seconds**: the model receives "Failed to fetch information", your client gets `function_call_timeout` (`{ call_id, function_name }`), and a result sent after that is dropped. If the real work can't finish that fast, don't block on it: **respond to the tool call immediately** with an interim acknowledgment — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }` — then deliver the real outcome when it's ready. HOW you deliver it depends on the tool type (not the session channel):
 
 | Tool type | Late-outcome delivery |
 |---|---|

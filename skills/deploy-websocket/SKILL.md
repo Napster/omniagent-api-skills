@@ -27,6 +27,8 @@ For a **text-only** session, add `modality: "text"` to the body (`{ "channelType
 
 The fallback for assembling a session without an agent is `POST /public/ws-connections` (companionId + functions + knowledge; `modality` works there too). Prefer the agent path.
 
+To end a live session from your server, call `DELETE /public/connections/{connection.id}` — it closes immediately with `closeReason: "connection_aborted"` (`400 ConnectionNotFound` if it already ended).
+
 ## 2. Decode the token
 
 The token is base64-encoded JSON: `{ url, token, connection, expiresAt }`. You only need `url` — the WebSocket endpoint already has the token embedded as a `?token=…` query param, so don't append `token` yourself (a second `?token=` makes an invalid URL).
@@ -44,6 +46,8 @@ url = json.loads(base64.b64decode(token))["url"]
 // Browser
 const { url } = JSON.parse(atob(token));
 ```
+
+Open the socket before `expiresAt` — if the client doesn't connect in time, the session closes with `closeReason: "connection_timeout"`.
 
 ## 3. Open the connection
 
@@ -82,24 +86,24 @@ Audio is **16-bit PCM, 16 kHz, mono, base64-encoded** in both directions.
 Send mic audio:
 
 ```js
-ws.send(JSON.stringify({ type: "send_audio", data: { audio: base64Pcm16 } }));
+ws.send(JSON.stringify({ type: "send_audio", data: { data: base64Pcm16 } }));
 ```
 
-Receive agent audio via `audio_received` events:
+Receive agent audio via `audio_received` events. Server events carry their name in the top-level `event` key (client commands use `type`):
 
 ```js
-function handle(event) {
-  if (event.type === "audio_received") {
-    playPcm16(base64ToBytes(event.data.audio)); // your playback
+function handle(msg) {
+  if (msg.event === "audio_received") {
+    playPcm16(base64ToBytes(msg.data.data)); // your playback
   }
 }
 ```
 
-Events (`avatar_state_changed`, `talk_state_changed`, `message_received`) and client commands (`send_message`, `set_settings`, `send_function_output`) are identical to WebRTC — see [[session-runtime]].
+Events (`avatar_state_changed`, `talk_state_changed`, `message_received`) and client commands (`send_message`, `set_settings`, `send_function_output`) are identical to WebRTC — see [[session-runtime]]. Also handle the session errors and shutdown events — `avatar_connection_warning` (`disconnect_after` 60/30/10 s before an idle close; sessions close after 3 minutes idle unless the agent sets `disableIdleTimeout`), `session_expired`, `no_credits_left`, `provider_connection_aborted` (`{ error: { code, message } }`), and `reaching_rate_limits` — so a headless client can report why a session ended.
 
 ## 5. Barge-in (interruption)
 
-Turn detection is always on. When the user speaks over the agent, the server sends `speech_started` and cancels the current response. Your client must:
+Turn detection is always on. When the user speaks over the agent, the server sends `speech_started` and cancels the current response. With a Cascade API key, `speech_started` arrives after the user's speech is transcribed, so interruptions are detected later. Your client must:
 
 1. **Stop queued playback immediately.** The server cancels generation, but audio already buffered on your side keeps playing unless you clear it.
 2. **Never mute the mic during agent speech.** If the mic is muted, the server can't detect the interruption.
@@ -128,7 +132,7 @@ In a text session you **don't** use `send_audio` / `audio_received`. Send the us
 { "event": "message_received", "data": { "message": { "role": "assistant", "action": "delta", "content": "Hi" } } }
 ```
 
-A text session has no speech, so speaking-related events never fire — no turn detection or barge-in, and no `talk_state_changed`. It emits `avatar_state_changed` and `message_received` only. Text is a **modality**, not a separate channel: it always runs over WebSocket (WebRTC is for audio + video).
+A text session has no speech, so speaking-related events never fire — no turn detection or barge-in, and no `talk_state_changed`. You still receive `message_received`, `avatar_state_changed`, and the other non-speech events — including tool calls (`function_implicitly_called`) and the session errors and shutdown events (`avatar_connection_warning`, `session_expired`, `no_credits_left`, `provider_connection_aborted`). Text is a **modality**, not a separate channel: it always runs over WebSocket (WebRTC is for audio + video).
 
 ## Common errors
 
@@ -140,6 +144,10 @@ A text session has no speech, so speaking-related events never fire — no turn 
 | No audio / garbled | Wrong audio format | Must be PCM16, 16 kHz, mono, base64 |
 | Agent talks over itself | Mic muted during playback or no echo cancellation | Keep mic open; enable `echoCancellation` |
 | Agent won't stop on interruption | Buffered audio not cleared | Flush playback on `speech_started` |
+| Socket opens, then closes with `provider_connection_aborted` | Provider rejected the config (`invalid_voice`, `invalid_credentials`, `instructions_too_long`, `connection_failed`) — this is not a 400 at connection creation | Fix the agent or API key, then open a new session |
+| Session closes with `connection_timeout` | Socket opened after `expiresAt` | Connect right after creating the connection |
+| `avatar_connection_warning`, then close (`idle_timeout`) | 3 minutes with no audio or messages | Keep streaming, or set `disableIdleTimeout` on the agent |
+| `429 RequestRateLimitExceeded` creating the session | Over 1 connection request/second per API key (shared across all connection endpoints) | Honor the `Retry-After` header |
 
 ## Next steps
 

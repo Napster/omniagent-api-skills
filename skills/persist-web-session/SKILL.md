@@ -25,6 +25,8 @@ Ask one question: **does navigating reload the page?**
 - **MPA** (server-rendered pages, plain HTML links): enable persistence, or the session ends on the first click.
 - **Mixed** (an SPA that hard-links into a separate checkout or docs area): enable it — the hard links are exactly where the session would die.
 
+**Check the site can be framed first.** The frame is same-origin, but the site's own headers decide whether it renders: `X-Frame-Options: SAMEORIGIN` is fine; `X-Frame-Options: DENY` or CSP `frame-ancestors 'none'` blocks it (common on hardened sites). Include the same init snippet on every page — the copy running inside the frame detects it and exits, so it never starts a second session.
+
 ## 2. When the wrap happens — `iframeOnNavigate`
 
 By default the wrap is **eager**: the site is wrapped as soon as the session connects, so every kind of navigation — clicks, redirects, code — happens safely inside the frame from the first moment.
@@ -37,7 +39,7 @@ Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed 
 
 Some destinations must leave the frame (a real top-level navigation that ends the session):
 
-- **Links to other domains break out by default** — automatic, no configuration; that covers other sites and your own subdomains alike. The exception list is `persistence.include.domains`: domains explicitly allowed to load inside the frame so the session survives (e.g. a docs site you also run). An entry matches the host and its subdomains. Costs, per the docs: inside an included domain the SDK is blind (no break-out checks, no address-bar/history sync, session-end unwraps to your own last page), and the site must permit framing (`X-Frame-Options`/`frame-ancestors`) — a blank frame is undetectable, so test every domain you add.
+- **Links to other domains break out by default** — automatic, no configuration; that covers other sites and your own subdomains alike. The exception list is `persistence.include.domains`: domains explicitly allowed to load inside the frame so the session survives (e.g. a docs site you also run). An entry matches the host and its subdomains. The included site must permit framing (`X-Frame-Options`/`frame-ancestors`) — a blank frame is undetectable, so test every domain you add, and only add domains you control or have agreed with.
 - **Same-origin routes that shouldn't be framed** — auth pages, checkout, signout — go in `exclude.urls`:
 
 ```js
@@ -87,8 +89,10 @@ For forms, prefer `form.requestSubmit()` over `form.submit()` — `requestSubmit
 | Session dies on the first navigation despite persistence | `iframeOnNavigate: true` + a programmatic navigation on the still-unframed landing page | §4 — dispatch `PERSIST_NAVIGATE_EVENT`, or drop back to the default eager wrap |
 | Avatar renders in the wrong place / `mountContainer` ignored | Persistence requires the avatar in the top-level document | Expected — `mountContainer` is ignored when persistence is on |
 | Auth or checkout page breaks inside the frame | Page that can't/shouldn't be framed | Add it to `exclude` — breaking out there is correct |
-| Session ends on a link that looks internal | Different subdomain = cross-origin | Serve it same-origin or accept the break-out |
+| Session ends on a link that looks internal | Different subdomain = cross-origin | Serve it same-origin, add the host to `persistence.include.domains`, or accept the break-out |
 | "Excluding `/check` also excluded `/checkout`" | It doesn't — matching is at path-segment boundaries | Check the actual entry; `/check` does not match `/checkout` |
+| Camera/mic/geolocation/payment stop working on framed pages | The frame only grants `iframeAllowAttribute` (default `"autoplay; clipboard-write"`) | Add what the pages need, e.g. `iframeAllowAttribute: "autoplay; clipboard-write; camera; microphone"` |
+| Page fights the frame / SSO, payment or consent widget won't render | Frame-busting code, or a third-party widget that refuses to run framed | Remove or scope frame-busting to cross-origin parents; put those pages in `exclude` |
 
 ## Hand back to the developer
 

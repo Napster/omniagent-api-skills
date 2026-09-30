@@ -16,7 +16,7 @@ Both attach to an agent by ID ([[create-agent]] / [[manage-agents]]).
 
 ### 1. Create a collection
 
-A collection is tied to a provider; it can only be used by agents on the same provider. Use `azureOpenAI`.
+Create the collection with `provider: "azureOpenAI"` — it works with agents on Realtime and Cascade API keys, whichever provider they use.
 
 ```bash
 curl -X POST https://companion-api.napster.com/public/knowledge-bases \
@@ -64,7 +64,7 @@ A session uses exactly **one** knowledge collection. To draw on several sources,
 
 ## FAQ collection — curated answers
 
-Create a collection and seed it with pairs in one call (the `faqs` array is optional — you can add pairs later):
+Create a collection and seed it with pairs in one call (the `faqs` array is optional — you can add pairs later). A collection holds up to **50 Q&A pairs**, and an agent uses **one** collection, so this is the agent's full FAQ budget:
 
 ```bash
 curl -X POST https://companion-api.napster.com/public/faqs \
@@ -123,7 +123,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
   -d '{ "knowledgeBaseId": "kb_abc123", "faqCollections": ["faq_abc123"] }'
 ```
 
-`faqCollections` takes multiple IDs; `knowledgeBaseId` is a single collection.
+`faqCollections` takes an array with **one** ID. Passing more returns `400` ("At most 1 FAQ collection can be attached."), on agents, channel configs, and connections alike. `knowledgeBaseId` is also a single collection. To cover more topics, add the pairs to the same FAQ collection.
 
 ## When to use which
 
@@ -140,7 +140,9 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
 |---|---|---|
 | File never processes | URL not publicly reachable | Host on public HTTPS |
 | Upload rejected | Unsupported type or over size limit | Check the table above |
-| Can't add more files | Collection is at the 30-file limit | Delete unused files or merge documents; a collection holds 30 |
+| `400 KnowledgeBaseFileLimitReached` | Collection is at the 30-file limit | Delete unused files or merge documents |
+| `400 FaqLimitExceeded` | Creating a collection or adding pairs past 50 | Trim or merge pairs; the limit is per collection |
+| `400` on `faqCollections` | More than one FAQ collection attached | Attach one; merge pairs into it |
 
 ## Next steps
 
