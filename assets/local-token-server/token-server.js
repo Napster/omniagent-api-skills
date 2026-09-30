@@ -8,7 +8,7 @@
  *
  * Two responsibilities:
  *   1. Serve the project's static files on http://localhost:5173.
- *   2. Expose POST /token, which calls the Omniagent API with NAPSTER_API_KEY
+ *   2. Expose POST /token, which calls the Napster API with NAPSTER_API_KEY
  *      and returns a short-lived connection token to the browser. The API key
  *      stays on the server; the browser only ever sees the token.
  *

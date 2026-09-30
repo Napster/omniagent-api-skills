@@ -8,7 +8,7 @@ port the `POST /token` handler into your real backend before you go live.
 ## Why this exists
 
 The browser must never hold your API key. To start a session, a server-side
-endpoint calls the Omniagent API with the key and hands the browser a
+endpoint calls the Napster API with the key and hands the browser a
 short-lived **connection token**. This script is that endpoint, plus a static
 file server so you can open your page over `http://localhost` (the WebRTC mic
 prompt only works on secure contexts — `file://` is blocked).
