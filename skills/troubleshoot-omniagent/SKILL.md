@@ -43,7 +43,7 @@ Prevention: [[create-persona]].
 | `NotAllowedError` / "Failed to access user media" | Permission blocked or no preflight | The SDK surfaces built-in denied-mic guidance; preflight `getUserMedia` if you want your own error UI instead |
 | Avatar overflows / misaligned | Mount container not bounded | Use the `.omniagent-mount` box; don't fight the SDK with `!important` |
 | `sendCommand is not a function` | `init()` not awaited | `await NapsterCompanionApiSdk.init(...)` |
-| Session errors at connect (e.g. on the data channel) but agent creation succeeded | Invalid `voiceId` — not validated at create time | Set a supported voice from the docs and update the agent ([[create-agent]]) |
+| Session closes right after the client connects, with a `provider_connection_aborted` event | The provider rejected the config. `data.error.code` is `invalid_voice` (bad `voiceId`), `invalid_credentials` (API key credentials), `instructions_too_long`, or `connection_failed` | Fix the agent or API key and open a new session ([[create-agent]]) |
 | Green-screen ghost / halo / color showing through | Server and SDK out of sync | Set BOTH `useGreenVideo: true` on the webrtc channel config AND `avatarStyle.view: "silhouette"` in the SDK init — they have to match |
 
 Prevention: [[deploy-webrtc]], [[session-runtime]].
@@ -58,6 +58,7 @@ Prevention: [[deploy-webrtc]], [[session-runtime]].
 | Agent interrupts itself constantly | No echo cancellation | `getUserMedia({ audio: { echoCancellation: true } })` |
 | Agent won't stop on barge-in | Buffered audio not cleared | Flush playback on `speech_started` |
 | Can't set socket headers in browser | Browser WebSocket can't send an `Authorization` header | You don't need one — the token is already embedded in the decoded `url`; connect to `url` as-is |
+| Session `failed` with `closeReason: "connection_timeout"` | Socket opened after `expiresAt` | Open the decoded `url` right after creating the connection |
 
 Prevention: [[deploy-websocket]].
 
@@ -69,9 +70,11 @@ Prevention: [[deploy-websocket]].
 | (SIP) `sipStatus` stuck `registering` | Bad credentials / wrong transport | Check `/errors`; `401` = creds; verify server/domain/transport |
 | (SIP) `lifecycleStatus: Failed` | Listener couldn't start | Read `status.message`; recheck `settings` |
 | (SIP) Calls ring, agent never answers | Number not routed to the trunk | Fix provider-side routing to the SIP endpoint |
-| (SIP) Agent answers but won't transfer | Handoff off or vague description | Enable handoff on the SIP channel config; write a specific `transferDescription` |
+| (SIP) Agent won't transfer, or sends callers to the wrong team | Handoff off, `transferExtension` missing, or a vague route `purpose` | Enable `humanHandoff` on the SIP channel config with `transferExtension` (required when enabled or when `routes` is set). For several teams add `routes` (up to 10 `{ extension, purpose }`) with specific purposes; calls that match no purpose go to `transferExtension` |
 | (VoIP) Need human handoff | Not supported on VoIP today | SIP-only for now; switch the agent to the SIP path |
 | Agent talks over the caller | Phone-side VAD too sensitive | Raise `silence_duration_ms` via the channel `providerSettings` override |
+| (SIP) Outbound `call` rejected on `destination` | SIP URI, spaces, or `*` / `#` in the number | Digits only: `+` followed by 7–15 digits, or up to 15 digits |
+| `400 TelephonyChannelNotAllowed` adding a SIP/VoIP channel | The agent is in puppeteer mode | Use `mode: "conversation"` for phone agents |
 
 Prevention: [[deploy-phone]].
 
@@ -86,6 +89,8 @@ Prevention: [[deploy-phone]].
 | Tool result ignored / odd reasoning | `output` stringified | Send a plain object, not a JSON string |
 | `function_call_timeout` fires | Handler slower than the 10s window | Return an interim ack immediately, then deliver the result late: `context_update` on the tool socket (explicit `wss://` tools) or client `send_message` (implicit) — see [[create-tool]] § Long-running work |
 | Explicit tool never reached | Bad `url` / unreachable server | Verify the endpoint and any auth `headers` |
+| Late `send_function_output` ignored | Sent after the 10s timeout (`function_call_timeout` carries `{ call_id, function_name }`) | Results after the timeout are dropped; send an interim result first |
+| MCP tools missing or failing mid-session | `mcp_tools` `action: "failed"` (bad URL or credentials), or a per-user token expired | Fix the registration; refresh the token with `set_settings` `mcp.authorizations` ([[add-mcp-servers]]) |
 
 Prevention: [[create-tool]], [[session-runtime]].
 
@@ -95,7 +100,9 @@ Prevention: [[create-tool]], [[session-runtime]].
 |---|---|---|
 | File never processes | URL not publicly reachable | Host on public HTTPS |
 | Upload rejected | Unsupported type / over size limit | Check supported formats and limits |
-| Can't add more files to a collection | At the 30-file per-collection limit | Delete unused files or merge documents ([[add-knowledge]]) |
+| `400 KnowledgeBaseFileLimitReached` | At the 30-file per-collection limit | Delete unused files or merge documents ([[add-knowledge]]) |
+| `400` on `faqCollections`: "At most 1 FAQ collection can be attached." | More than one FAQ collection on the agent, channel config or connection | Merge the Q&A pairs into one collection |
+| `400 FaqLimitExceeded` | Collection over 50 Q&A pairs | Trim or consolidate; 50 is the maximum |
 | FAQ answer not returned | User's wording too far from the FAQ question | Matching is semantic, not exact — phrase the FAQ question the way users actually ask, add variants for distinct intents |
 
 Prevention: [[add-knowledge]].
@@ -104,13 +111,17 @@ Prevention: [[add-knowledge]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `400` when creating a connection | Invalid session settings — unsupported `voiceId`, bad provider creds, or companion not ready | Read the error; fix the setting and reconnect. Invalid settings are rejected at **connect**, not at agent creation ([[create-agent]]) |
-| `429 RequestRateLimitExceeded` on connect | Connection endpoints are limited to 1 request / 5s | Honor the `Retry-After` header (seconds) before retrying — don't hardcode a wait |
+| `400` when creating a connection | Something the API checks itself: missing `voiceId`, a digital twin whose cloned voice isn't ready, a tool / FAQ collection / MCP server that doesn't exist, MCP on an unsupported key (`UnsupportedProvider`), a missing per-user MCP token (`McpAuthorizationRequired`), puppeteer mode on a non-Cascade key (`UnsupportedSessionMode`) | Read the error code, fix, retry. Voice, credential and instruction-length problems are NOT `400`s — they arrive as `provider_connection_aborted` after the client connects |
+| `429 RequestRateLimitExceeded` on connect | Connection endpoints are limited to 1 request per second per API key, shared by `POST /public/connections`, `POST /public/ws-connections`, `POST /public/agents/{id}/connections` and `DELETE /public/connections/{id}` | Honor the `Retry-After` header (seconds) before retrying — don't hardcode a wait |
 | `409 ConcurrentSessionLimitReached` | At the 5-concurrent-sessions-per-transport cap (WebRTC/WebSocket/VoIP/SIP tracked separately) | Close idle sessions — they count until closed; contact support for higher limits |
 | Agent doesn't greet | No auto-greeting | Set `initialSpeech` on the connection, or send the greeting nudge on ready ([[session-runtime]]) |
 | Memory not recalled | Missing/changing `externalClientId` | Stable ID matching `^[A-Za-z0-9_-]{1,32}$` |
 | `externalClientId` rejected | Doesn't match the regex | Hash UUIDs/emails to ≤32 allowed chars |
-| Session closes unexpectedly | Idle timeout | Set `disableIdleTimeout` or keep traffic flowing |
+| Session closes with `closeReason: "idle_timeout"` | 3 minutes with no audio or messages (the client gets `avatar_connection_warning` with `disconnect_after` 60 / 30 / 10) | Keep traffic flowing, or set `disableIdleTimeout: true` on the agent |
+| Session closes with `session_expired` / `no_credits_left` | Provider's maximum session length reached / org out of credits | Reconnect / add credits |
+| Need to end a live session from your backend | — | `DELETE /public/connections/{id}` (webrtc, websocket, kiosk only; sip/voip → `400 ConnectionAbortNotSupported`) |
+| `set_settings` `temperature` / `turn_detection` has no effect | Cascade key: mid-session only `instructions` and `inline_functions` change | Set them on the agent before the session |
+| Barge-in not detectable from `speech_started` (Cascade) | On Cascade, user speech events arrive after the transcript | Expect late speech events; cancellations report `reason: "interrupted"` |
 | Events look empty | Reading the wrong field | Log the whole message; key is `event` or `type` |
 | `set_settings.instructions` wiped the persona | It replaces the full prompt | For context use `send_message role:system` instead |
 

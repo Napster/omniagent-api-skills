@@ -18,7 +18,7 @@ An MCP server is an external service exposing tools over the [Model Context Prot
 
 ## Before you start
 
-- **Provider.** MCP servers work on Azure OpenAI and OpenAI. Connectors (below) require **OpenAI only** — not Azure OpenAI, which is the default.
+- **Architecture and provider.** MCP needs an API key on the **Realtime** architecture (Azure OpenAI or OpenAI provider). Cascade keys return `400 UnsupportedProvider`. Connectors (below) also need the **OpenAI** provider, which always uses your own OpenAI key; Azure OpenAI, the default, returns `400 UnsupportedProvider`. On Azure OpenAI, register the service's own MCP server as a per-user server instead.
 - **Channels.** MCP is unavailable on VoIP and SIP. A server attached to an agent does not apply on phone calls.
 - Ask the developer for the server's **URL** and how it authenticates before writing anything.
 
@@ -106,7 +106,7 @@ curl -X POST https://companion-api.napster.com/public/agents/$AGENT_ID/connectio
   }'
 ```
 
-The token is used for that session only and never stored. **You run the OAuth flow** — register your own OAuth client with Google/Microsoft/Dropbox, take the user through consent, hold the refresh token, and mint a fresh access token per session. A stale token fails mid-conversation.
+The token is used for that session only and never stored. **You run the OAuth flow** — register your own OAuth client with Google/Microsoft/Dropbox, take the user through consent, hold the refresh token, and mint a fresh access token per session. If a conversation can outlive the token, refresh it mid-session (below).
 
 The token must carry the scopes the connector's tools need, or the session starts normally and the tools fail at call time. Scopes come from the service, not from Napster — check the provider's documentation, and read what a scope actually grants before requesting it.
 
@@ -115,11 +115,27 @@ The token must carry the scopes the connector's tools need, or the session start
 | Registered with | Session sends a token | Result |
 |---|---|---|
 | `authorizationRequired: true` | yes | works |
-| `authorizationRequired: true` | no | `400` |
+| `authorizationRequired: true` | no | `400 McpAuthorizationRequired` |
 | `authorizationRequired: false` | yes | `400` — the server does not accept one |
 | `authorizationRequired: false` | no | works, using `headers` |
 
 On the agent connection endpoint, `servers` and `connectors` in the body are **ignored** — the agent decides what is attached, and the connection supplies only tokens.
+
+### Refreshing a token mid-session
+
+Send `set_settings` from the client (Realtime keys). The agent uses the new token from its next call to that server:
+
+```js
+instance.sendCommand({
+  type: "set_settings",
+  data: { mcp: { authorizations: [{ mcp_server_id: "googlecalendar", token: "ya29.a0AfH6_refreshed..." }] } },
+});
+```
+
+- Data-channel fields are snake_case: `mcp_server_id` (the REST connection body uses `mcpServerId`).
+- The list **replaces every token** for the session — send every server that needs one, each time.
+- All-or-nothing: if the update breaks the strict rule above, nothing changes and the client gets an `error` event whose `message` explains why.
+- Tokens only — you can't attach or detach servers mid-session.
 
 ## Step 5 — approval-gated calls (optional)
 
@@ -138,7 +154,7 @@ instance.sendCommand({
 
 **15-second limit.** Unanswered requests are auto-rejected and you get `action: "cancelled"`. Build the UI before setting `always` — the agent gives no spoken sign it is waiting. `send_mcp_approval` is not yet in the Web SDK's typed command union, so TypeScript needs a cast.
 
-Two more event types report activity: `mcp_tools` lists each server's tools at session start (watch for `action: "failed"` — the earliest sign of a bad URL or credential), and `mcp_call` tracks each invocation. See [[session-runtime]].
+Two more event types report activity. `mcp_tools` lists each server's tools at session start. On `action: "failed"`, `error` is a plain **string** naming the server (for example `"Failed to list tools for MCP server 'crm'"`) with no underlying cause — check the URL, `headers` and token. A failed server stays failed for the session. `mcp_call` tracks each invocation (`created`, then `completed` or `failed`, paired by `item_id`). MCP events put `type` at the top level with flat fields (no `data` wrapper). See [[session-runtime]] § MCP events.
 
 ## Managing servers
 
@@ -157,11 +173,14 @@ Connectors never appear in `GET /public/mcp-servers`; that lists only servers yo
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `409 McpServerAlreadyExists` | That `id` is taken in this project | Pick another, or `PUT` to update |
-| `400 McpServerValidationFailed` | Missing or non-`https` `url` | Registration needs an absolute `https://` URL |
+| `400` validation error on `id` / `url` | `id` missing or malformed (`^[a-zA-Z0-9_-]+$`, 48 characters max), or `url` missing or not `https://` | Fix the field |
+| `400 McpServerValidationFailed` | The platform rejected the server definition | Read the error details, fix, retry |
 | `400 McpServerNotFound` on attach | ID does not exist | For `mcp.servers` it must be registered in your project; for `mcp.connectors` it must be one of the eight platform IDs |
 | `400 McpServerInUse` on delete | Still attached somewhere | Detach from every agent and channel config first |
-| `400 UnsupportedProvider` | Provider does not support MCP | Check the key's provider; connectors need OpenAI, not Azure OpenAI |
-| `400` mentioning authorization | Token supplied for a server that takes none, or missing for one that requires it | Match the token to `authorizationRequired` |
+| `400 UnsupportedProvider` | The key's architecture or provider does not support MCP | MCP needs a **Realtime** key — Cascade keys don't support it; connectors also need the OpenAI provider, not Azure OpenAI |
+| `400 McpAuthorizationRequired` (any connection endpoint) | A server with `authorizationRequired: true`, or a connector, has no entry in `mcp.authorizations` | Pass the user's token |
+| `400 McpServerNotFound` on connect | An attached ID no longer exists, or a token names a server that isn't attached | Re-register or re-attach, or drop the stray token |
+| `400` token for a no-auth server | `authorizationRequired: false` but a token was sent | Remove it |
 | Session will not start | Two attached servers share a name, or a server name collides with a tool name | Rename one — MCP server IDs and tool names share a namespace |
 | Agent has no tools on a phone call | MCP is unavailable on VoIP/SIP | Use a [[create-tool]] function instead for phone agents |
 | Tools listed but every call fails | Token lacks the required scopes | Re-run consent with the scopes the tools need |

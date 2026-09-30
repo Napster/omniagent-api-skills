@@ -23,7 +23,7 @@ curl https://companion-api.napster.com/public/agents/agent_abc123 \
 
 ## Update an agent
 
-`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `mcp`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`. Changes apply to every channel using the agent.
+`PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `mcp`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`, `mode`. Changes apply to every channel using the agent. `faqCollections` still accepts only one ID.
 
 ```bash
 curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
@@ -88,6 +88,7 @@ Use this when you want to stop overriding behavior on one channel — or take th
 | Update silently "lost" other tools | `functions` replaced, not merged | Send the complete array you want |
 | `404` on a channel config | No config set for that channel | Channel configs are optional; create with PUT first ([[deploy-phone]]) |
 | Deleted agent still answering calls | SIP connection still deployed | Delete the SIP connection too ([[deploy-phone]]) |
+| `400 TelephonyChannelNotAllowed` on PUT `.../channels/sip` or `/voip` | Agent is in `puppeteer` mode | Puppeteer agents can't use phone channels; switch `mode` to `conversation` or use another channel |
 
 ## Next steps
 

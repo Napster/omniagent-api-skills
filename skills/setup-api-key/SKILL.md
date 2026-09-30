@@ -21,13 +21,15 @@ The key is created in the dashboard — there is no API to mint one.
 
 1. Open the dashboard at [companion-api.napster.com/admin](https://companion-api.napster.com/admin).
 2. **Choose a project**, or create a new one. API keys are **scoped per project** — the key only works for the personas, agents, tools, and knowledge in that project, so pick the project you intend to build in.
-3. In the left nav, go to **Keys**, then click **New API Key**.
+3. In the left nav, go to **Keys**, then click **+ Create API key**.
 4. Fill in the form:
    - **Key Name** — a label for you (e.g. `Production Key`).
    - **Project** — confirms which project the key is bound to.
-   - **Provider** — select the LLM provider (**Azure OpenAI**).
-   - **Deployment** — **Napster** (Napster's managed infrastructure — no credentials needed) or **Custom** (connects to your own deployment; requires your endpoint and API key, so inference runs in your cloud).
-5. Click **+ Create API Key** and copy it. Treat it like a password — you may not be able to see it again.
+   - **Architecture** — how the agent listens, thinks, and speaks. Architecture is not a provider; each one has its own provider options:
+     - **Realtime** (default, recommended for a first key) — one model handles speech in and out. **Provider**: **Azure OpenAI** (runs on Napster's managed infrastructure — no credentials needed — unless you tick **Use my own credentials** and enter your deployment name, endpoint, and API key) or **OpenAI** (always your own OpenAI API key; required for MCP connectors).
+     - **Cascade** — speech recognition (ASR), the language model (LLM), and the voice (TTS) run as separate stages, each with its own provider: ASR = Azure OpenAI; LLM = Azure OpenAI or Anthropic; TTS = Azure OpenAI or OpenAI. Azure OpenAI stages can run on Napster's infrastructure; Anthropic and OpenAI stages need your own API key and model. Some features differ on Cascade (e.g. no MCP) — see [Cascade architecture](https://developers.napster.com/docs/building-your-omniagent/configuration#cascade-architecture). Cascade is also the architecture that enables **puppeteer mode** (the agent speaks only lines you send). A Cascade key with only a TTS stage is enough for it.
+   - The **Pricing** panel beside the form shows the per-minute rate for the current selection.
+5. Click **+ Create API Key**. The **API Key Generated** page shows the key — copy it now and treat it like a password.
 
 ## 2. Store it as `NAPSTER_API_KEY`
 

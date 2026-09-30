@@ -1,6 +1,6 @@
 ---
 name: session-runtime
-description: Handle everything that happens DURING a live Omniagent session — after the channel is connected, before it closes. Covers per-session configuration set at connection time (cross-session memory via `externalClientId`, user context, tags), the server events your client receives (`avatar_state_changed`, `talk_state_changed`, `message_received`), the client commands you send back (`send_message`, `set_settings`, `send_function_output`), the function-call loop for implicit tools, and the manual greeting nudge. Trigger this skill when the developer asks how to handle events, make the agent greet, handle tool calls in the client, update instructions / temperature / turn detection mid-session, send a system message, enable memory across calls, or pass user context (name, plan, etc.) into a session. Applies equally to WebRTC and WebSocket. For OPENING a session (token, SDK init, panel), use [[deploy-webrtc]] or [[deploy-websocket]] instead. For reading the transcript AFTER a session closes, use [[monitor-sessions]].
+description: Handle everything that happens DURING a live Omniagent session — after the channel is connected, before it closes. Covers per-session configuration set at connection time (cross-session memory via `externalClientId`, user context, tags), the server events your client receives (`avatar_state_changed`, `talk_state_changed`, `message_received`), the client commands you send back (`send_message`, `set_settings`, `send_function_output`), the function-call loop for implicit tools, and the manual greeting nudge. Trigger this skill when the developer asks how to handle events, make the agent greet, handle tool calls in the client, update instructions / temperature / turn detection mid-session, send a system message, use puppeteer mode / make the agent say exact lines (`talk`), end a live session from the backend, refresh MCP tokens mid-session, handle session warnings and shutdown events, enable memory across calls, or pass user context (name, plan, etc.) into a session. Applies equally to WebRTC and WebSocket. For OPENING a session (token, SDK init, panel), use [[deploy-webrtc]] or [[deploy-websocket]] instead. For reading the transcript AFTER a session closes, use [[monitor-sessions]].
 ---
 
 # session-runtime
@@ -38,7 +38,7 @@ If the question is about getting a session **opened** (token, SDK init, panel), 
                                          tool loop, memory)
 ```
 
-The rest of this skill covers, in order: per-session configuration set at connection time (memory, user context, tags), the server events you receive, the client commands you send, the greeting nudge, and the function-call loop.
+The rest of this skill covers, in order: per-session configuration set at connection time (memory, user context, tags), the server events you receive, the client commands you send, the greeting nudge, the function-call loop, and ending a session from your backend.
 
 ## Per-session configuration
 
@@ -69,11 +69,17 @@ Pass an `onData` callback (WebRTC) or read socket messages (WebSocket). The core
 | Event | Meaning |
 |---|---|
 | `avatar_state_changed` | Readiness changed (`preparing` → `ready`). `ready` can REPEAT: on WebRTC with `videoPolicy: "deferred"` it fires at audio-ready (`data.details.mode: "audio_only"`) and again at video-ready (`"audio_video"`). Latch it — run session-start logic once. |
-| `talk_state_changed` | Agent speech (`preparing` → `started` → `ended`). |
+| `talk_state_changed` | Agent speech: `preparing` → `started` → `in_progress` (next sentence) → `ended`, or `canceled` if the user barges in. `data.talk_id` identifies the line (in puppeteer mode it's your `talkId`); `data.sentence_index` (from `0`) is on `started`, `in_progress` and `ended`. |
 | `message_received` | Conversation lifecycle; fields nest under `data.message`, and `data.message.action` marks the stage. |
 | `ui_update` | Arbitrary JSON the developer's OWN functions server pushed (via a WebSocket explicit tool — see [[create-tool]]). Relayed verbatim; `data` is whatever shape that server sent, so dispatch on a developer-defined discriminator. One-way, no ack, not stored (late-joining clients miss past updates). |
+| `avatar_connection_warning` | Idle session closing soon: `data.disconnect_after` is `60`, `30`, then `10` seconds. After 3 minutes idle the session closes with `closeReason: "idle_timeout"`, unless the agent sets `disableIdleTimeout` (then there are no warnings). |
+| `session_expired` / `no_credits_left` | Session is closing (`data` is `null`); `closeReason` matches the event name. |
+| `provider_connection_aborted` | The provider rejected the config after the client connected: `data.error.code` is `invalid_voice`, `invalid_credentials`, `instructions_too_long` or `connection_failed` (`data` can be `null`). The session closes — fix the agent or key and reconnect. |
+| `reaching_rate_limits` | Warning only: `{ name, remaining_rate, reset_seconds }`. |
 
 `message_received` fields are nested under **`data.message`**. This holds on **both** transports; over WebRTC the Web SDK delivers the event as-is. `data.message` carries `role` (`user`/`assistant`), `action`, `content`, `item_id`, `response_id`, `timestamp`, a `type` (`"message"` or `"session"`), and more (`tokens`, `is_forced`, `content_index`). The **first** frame is a session marker (`type: "session"`, no `role`/`content`) — skip any frame where `data.message.type === "session"`. Useful actions: user `completed` (final transcription in `content`), assistant `delta` (incremental text), assistant `completed` (full response), `cancelled` (with `reason`, e.g. `turn_detected` on barge-in), `failed` (with `error`).
+
+On a Cascade key, user speech events (`speech_started` and the related events) arrive together after the transcript, and barge-in cancellations report `reason: "interrupted"`, not `"turn_detected"`.
 
 ```js
 function handleData(msg) {
@@ -97,6 +103,16 @@ function handleData(msg) {
 User transcription `completed` can arrive **after** assistant events have started — don't assume the user's turn finalizes before the agent replies. If `content` is empty, recognition failed; show "[inaudible]".
 </Callout>
 
+### MCP events
+
+MCP events carry `type` at the top level with flat fields (`msg.event ?? msg.type` catches them):
+
+- `mcp_tools`: one per server at session start. `completed` includes `tool_names`; `failed` includes `error` as a string.
+- `mcp_call`: `created` (arguments as a JSON string in `content`), then `completed` or `failed`, paired by `item_id`.
+- `mcp_approval_request`: `created`, then answer with `send_mcp_approval` within 15 s. It ends with `completed` (`result: approved | rejected`) or `cancelled` (timed out).
+
+See [[add-mcp-servers]].
+
 ## Client commands
 
 `send_message` — inject text as the user or as a system context update:
@@ -114,7 +130,16 @@ instance.sendCommand({
 - `trigger_response`: `true` = respond now; `false` = absorb silently.
 - `delay`: `true` = wait until the agent finishes speaking before delivering; `false` (default) = deliver immediately, interrupting.
 
-`set_settings` — change instructions, temperature, or turn detection mid-session (fields optional; included ones replace current values):
+`set_settings` — change session settings mid-session. All fields are optional; omitted fields keep their current values. Which fields work depends on the API key's architecture:
+
+| Field | Architecture | Effect |
+|---|---|---|
+| `instructions` | Realtime, Cascade | Fully replaces the system prompt |
+| `temperature` | Realtime | 0–1 |
+| `turn_detection` | Realtime | `{ threshold, prefix_padding_ms, silence_duration_ms }` |
+| `modality` | Realtime | `audio` ↔ `text`; switching to `audio` fails if the session has no voice |
+| `inline_functions` | Realtime, Cascade | Register tools for the rest of the session (tool-definition shape plus `id`). Only implicit tools or explicit tools on an `http(s)` URL. Names can't collide with the agent's own tools. Each send replaces the previous inline set |
+| `mcp.authorizations` | Realtime | `[{ "mcp_server_id", "token" }]` — refresh per-user MCP tokens ([[add-mcp-servers]]) |
 
 ```js
 instance.sendCommand({
@@ -124,6 +149,14 @@ instance.sendCommand({
 ```
 
 `instructions` here **fully replaces** the system prompt — use it to switch the agent's whole role. For a context nudge that keeps the prompt, use `send_message` with `role: system` instead.
+
+`talk` — puppeteer mode only. Set `mode: "puppeteer"` on the agent, or per session on `POST /public/connections` or `POST /public/ws-connections`. It requires a Cascade API key; a Cascade key with only text-to-speech is enough, and other keys return `400 UnsupportedSessionMode`. The agent speaks exactly your text:
+
+```js
+instance.sendCommand({ type: "talk", data: { talkId: "intro-1", text: "Welcome to Acme.", split: true } });
+```
+
+`split` (default `true`) speaks the text sentence by sentence. Track each line with `talk_state_changed` where `talk_id === talkId`. Puppeteer agents can't use SIP or VoIP.
 
 ## The greeting nudge
 
@@ -165,8 +198,17 @@ async function handleData(msg) {
 - `arguments` is already a parsed object — don't `JSON.parse` it.
 - `output` should be a plain object, not a stringified one.
 - **Dedupe by `call_id`** — the same call can arrive twice (streaming + final).
-- Default tool timeout is **10s**; miss it and the model gets "Failed to fetch information" plus a `function_call_timeout` event. Slow handler? Reply with an interim `send_function_output` NOW ("working on it"), then inject the real outcome later with `send_message` (`role: "system"`, `trigger_response: true`) — see [[create-tool]] § Long-running work.
+- Default tool timeout is **10s**; miss it and the model gets "Failed to fetch information" plus a `function_call_timeout` event (`data: { call_id, function_name }`). A `send_function_output` sent after the timeout is dropped. Slow handler? Reply with an interim `send_function_output` NOW ("working on it"), then inject the real outcome later with `send_message` (`role: "system"`, `trigger_response: true`) — see [[create-tool]] § Long-running work.
 - If the agent never calls a tool the prompt asks for: the tool isn't attached to the agent ([[create-agent]]) — creating it isn't enough.
+
+## Ending a session from your backend
+
+```bash
+curl -X DELETE https://companion-api.napster.com/public/connections/sess_xyz789 \
+  -H "X-Api-Key: $NAPSTER_API_KEY"
+```
+
+Closes a live `webrtc` / `websocket` / `kiosk` session immediately; it's recorded as `closed` with `closeReason: "connection_aborted"`. Errors: `400 ConnectionNotFound` (unknown ID or already closed), `400 ConnectionAbortNotSupported` (`sip`/`voip`), `400 ConnectionAbortFailed` (retry). Counts against the shared connection rate limit (1 request/second per API key).
 
 ## Common errors
 

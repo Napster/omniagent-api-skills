@@ -1,5 +1,5 @@
 ---
-description: Guided end-to-end setup for the Napster Omniagent API.
+description: Guided end-to-end setup for the Napster API.
 disable-model-invocation: true
 argument-hint: [optional: describe what you want to build]
 ---
