@@ -14,7 +14,7 @@ There are two ways to wire up the phone. **If the developer doesn't say which, d
 | **VoIP** (default) | Napster exposes a **webhook endpoint** for the agent. You register it with Twilio (the only supported VoIP provider) for a phone number; on an incoming call Twilio calls the webhook to connect the caller to the agent. Twilio owns the number and the telephony — Napster only provides the webhook. No trunk credentials. **Human handoff is not yet supported on this path.** | Most cases — fastest way to get the agent on a number. |
 | **SIP** | You bring your own SIP trunk (a PBX or any SIP trunk provider) and hand Napster credentials to register against it. Supports human handoff. | You already run a SIP trunk, need the agent on existing telephony, or need human handoff. |
 
-Both attach to the **same agent** — create it once ([[create-agent]]); a clear persona and a set `language` help on voice-only calls. Unlike WebRTC/WebSocket (created per session), the phone channel is a **persistent** config: set it once and the agent answers until you remove it. Agents in `mode: "puppeteer"` can't use phone channels — adding a SIP or VoIP channel config returns `400 TelephonyChannelNotAllowed`.
+Both attach to the **same agent** — create it once ([[create-agent]]); a clear persona and a set `language` help on voice-only calls. Unlike WebRTC/WebSocket (created per session), the phone channel is a **persistent** config: set it once and the agent answers until you remove it. Agents in `mode: "puppeteer"` can't use phone channels — adding a SIP or VoIP channel config returns `400 TelephonyChannelNotAllowed`. Phone channels also don't work with agents on a **Microsoft Foundry** API key.
 
 ---
 

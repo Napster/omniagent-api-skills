@@ -16,6 +16,7 @@ When this skill and the live docs disagree, **the docs win** — re-check with t
 | `401 Unauthorized` on every call | Key missing/expired/invalid | Re-check `NAPSTER_API_KEY`; regenerate in the dashboard |
 | `401` despite a correct key | Wrong header | Use `X-Api-Key: <key>`, not `Authorization: Bearer` |
 | Works locally, 401 in CI/prod | Env var not set in that environment | Add `NAPSTER_API_KEY` to the secret store |
+| Microsoft Foundry key: session fails to start, Azure returns `401` | **Napster.API** has no role on the Foundry resource, the role hasn't taken effect yet, or the key's tenant ID is wrong | Assign **Foundry User** to **Napster.API** in the resource's Access control (IAM), wait a few minutes, check the tenant ID ([[setup-api-key]]) |
 | Resource "not found" that you created | Key scoped to a different project | Use the key for the project the resource lives in |
 | Key visible in browser network tab | API key used client-side | Move issuance server-side; browser gets a token only |
 
@@ -123,6 +124,7 @@ Prevention: [[add-knowledge]].
 | `set_settings` `temperature` / `turn_detection` has no effect | Cascade key: mid-session only `instructions` and `inline_functions` change | Set them on the agent before the session |
 | Barge-in not detectable from `speech_started` (Cascade) | On Cascade, user speech events arrive after the transcript | Expect late speech events; cancellations report `reason: "interrupted"` |
 | Events look empty | Reading the wrong field | Log the whole message; key is `event` or `type` |
+| `set_settings` has no effect at all | Microsoft Foundry key — `set_settings` isn't supported | Change the agent in Foundry, save, and update the key's agent version |
 | `set_settings.instructions` wiped the persona | It replaces the full prompt | For context use `send_message role:system` instead |
 
 Prevention: [[session-runtime]].
