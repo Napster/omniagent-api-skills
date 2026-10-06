@@ -98,7 +98,7 @@ print(res.json()["id"])  # agent_…
 
 ### Provider settings
 
-`providerSettings` controls model behavior and audio processing. All fields apply on a **Realtime** key. On a **Cascade** key, `instructions` works, `turnDetection` applies only at session start, and `temperature` / `noiseReduction` are ignored.
+`providerSettings` controls model behavior and audio processing. All fields apply on a **Realtime** key. On a **Cascade** key, `instructions` works, `turnDetection` applies only at session start, and `temperature` / `noiseReduction` are ignored. On a **Microsoft Foundry** key, the model, tools, and knowledge come from the Foundry agent — tools defined on the Napster API aren't used ([Connect a Microsoft Foundry agent](https://developers.napster.com/docs/guides/microsoft-foundry-agent)).
 
 | Field | Type | Notes |
 |---|---|---|

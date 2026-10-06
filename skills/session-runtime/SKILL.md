@@ -141,6 +141,8 @@ instance.sendCommand({
 | `inline_functions` | Realtime, Cascade | Register tools for the rest of the session (tool-definition shape plus `id`). Only implicit tools or explicit tools on an `http(s)` URL. Names can't collide with the agent's own tools. Each send replaces the previous inline set |
 | `mcp.authorizations` | Realtime | `[{ "mcp_server_id", "token" }]` — refresh per-user MCP tokens ([[add-mcp-servers]]) |
 
+`set_settings` isn't supported on Microsoft Foundry keys.
+
 ```js
 instance.sendCommand({
   type: "set_settings",

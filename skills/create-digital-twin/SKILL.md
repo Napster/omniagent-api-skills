@@ -13,7 +13,7 @@ Reach for this when the developer wants the agent to *be* a specific person — 
 **Consent is required first.** An admin must enable digital twins for the organization in the dashboard. Without it, `POST /public/digital-twins` fails with `DigitalTwinConsentRequired`. This is a legal gate — creating a likeness of a real person needs their consent — so don't work around it; have the admin enable it.
 </Callout>
 
-Digital twins work with Realtime and Cascade API keys.
+Digital twins work with Realtime and Cascade API keys — not with Microsoft Foundry keys.
 
 ## Create the digital twin
 
