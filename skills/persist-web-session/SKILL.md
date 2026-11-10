@@ -10,10 +10,12 @@ description: Keep one Omniagent session alive while the visitor navigates a mult
 On a traditional multi-page website, every navigation is a full page load — and a full page load tears down the WebRTC session mid-sentence. Persistence keeps one conversation alive across those navigations: the SDK wraps the site in a **same-origin iframe** while the avatar stays in the top-level document, which never reloads. Navigation happens inside the frame; the session never notices.
 
 ```js
-NapsterCompanionApiSdk.init(token, {
+NapsterCompanionApiSdk.init(getToken, {
   persistence: { enabled: true },
 });
 ```
+
+`getToken` is the same token function the rest of the embed uses (Web SDK 2 — see [[deploy-webrtc]]). With persistence on, the avatar is always the floating widget: the SDK ignores `layout.type: "inline"` and `layout.mountContainer`, because the avatar has to live in the top-level document.
 
 Ground the details in the live docs: https://developers.napster.com/docs/sdks/web-sdk/persistence
 
@@ -25,13 +27,15 @@ Ask one question: **does navigating reload the page?**
 - **MPA** (server-rendered pages, plain HTML links): enable persistence, or the session ends on the first click.
 - **Mixed** (an SPA that hard-links into a separate checkout or docs area): enable it — the hard links are exactly where the session would die.
 
-**Check the site can be framed first.** The frame is same-origin, but the site's own headers decide whether it renders: `X-Frame-Options: SAMEORIGIN` is fine; `X-Frame-Options: DENY` or CSP `frame-ancestors 'none'` blocks it (common on hardened sites). Include the same init snippet on every page — the copy running inside the frame detects it and exits, so it never starts a second session.
+**Check the site can be framed first.** The frame is same-origin, but the site's own headers decide whether it renders: `X-Frame-Options: SAMEORIGIN` is fine; `X-Frame-Options: DENY` or CSP `frame-ancestors 'none'` blocks it (common on hardened sites). Include the same init snippet on every page — the copy running inside the frame detects it and exits, so it never starts a second session. SDK callbacks such as `onReady` don't fire in that copy, so page code that waits on them won't run inside the frame.
 
 ## 2. When the wrap happens — `iframeOnNavigate`
 
-By default the wrap is **eager**: the site is wrapped as soon as the session connects, so every kind of navigation — clicks, redirects, code — happens safely inside the frame from the first moment.
+By default the wrap is **eager**: the site is wrapped as soon as `init()` runs, before the microphone prompt and the connection. With the launcher (`button.enabled`) it also happens at `init()`, not at the click, so visitors browse inside the frame whether or not they start a session. Once the framed copy has loaded, every kind of navigation — clicks, redirects, code — happens safely inside the frame. Until then the original page is still live: clicks and form submissions are guarded, but a script or a redirect can still end the session. The cost: the page loads a second time inside the frame, so its scripts (and analytics page views) run twice, and anything typed before the frame appears is lost.
 
-Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed on stays completely native, and the iframe appears on the first allowed link click. The cost: until that click, only link clicks are intercepted — a programmatic navigation on the landing page ends the session unless it's routed through the event (§4). Offer this mode when the developer cares that the landing page render exactly as it does without persistence.
+Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed on stays completely native, and the iframe appears on the first navigation — a link click, a form submission, or a persist-navigate event. With the launcher, that can happen before a session starts. The cost: until then, a programmatic navigation or redirect on the landing page ends the session unless it's routed through the event (§4), and so does a link whose click handler calls `stopPropagation()`. Offer this mode when the developer cares that the landing page render exactly as it does without persistence.
+
+**When the session ends.** A persisted session that ends normally reloads the page the visitor is on, without the frame. With the launcher, the launcher card appears again after that reload, and the SDK logs a console warning when both are on. If the session fails to connect, or you call the launcher controller's `destroy()`, the SDK removes the frame in place, without a reload.
 
 **Navigation feedback — `navigationProgress`.** A navigation the engine takes over drives no browser chrome (no tab spinner), so a click can look dead for the whole load. Opt in to a thin progress bar over the page: `navigationProgress: true` (default styling: `#be369d`, `3px`) or `{ color, height }`; the CSS custom properties `--np-persist-progress-color` / `--np-persist-progress-height` override it from a stylesheet. Off by default — skip it if the site shows its own navigation indicator.
 
@@ -39,7 +43,7 @@ Set `iframeOnNavigate: true` to **defer** the wrap: the page the visitor landed 
 
 Some destinations must leave the frame (a real top-level navigation that ends the session):
 
-- **Links to other domains break out by default** — automatic, no configuration; that covers other sites and your own subdomains alike. The exception list is `persistence.include.domains`: domains explicitly allowed to load inside the frame so the session survives (e.g. a docs site you also run). An entry matches the host and its subdomains. The included site must permit framing (`X-Frame-Options`/`frame-ancestors`) — a blank frame is undetectable, so test every domain you add, and only add domains you control or have agreed with.
+- **Links to other domains break out by default** — automatic, no configuration; that covers other sites and your own subdomains alike, and an `http://` link on an `https://` site counts as another domain. The exception list is `persistence.include.domains`: domains explicitly allowed to load inside the frame so the session survives (e.g. a docs site you also run). An entry matches the host and its subdomains. The included site must permit framing (`X-Frame-Options`/`frame-ancestors`) — a blank frame is undetectable, so test every domain you add, and only add domains you control or have agreed with.
 - **Same-origin routes that shouldn't be framed** — auth pages, checkout, signout — go in `exclude.urls`:
 
 ```js
@@ -53,11 +57,13 @@ persistence: {
 
 `urls` entries match their exact path and everything under it at **path boundaries**, not by spelling: `"/check"` matches `/check` and `/check/out` but NOT `/checkout`. End with `/` for "everything under this directory".
 
+**Only link clicks are checked inside the frame.** A form or a script that navigates to an excluded path or another domain loads inside the frame.
+
 **Redirect trap:** exclusion is checked against the *clicked* URL only. A same-origin `/login` that redirects to an external identity provider passes the check — and the auth page loads *inside the frame*. Exclude the **starting path** (`/login`), not the redirect destination.
 
 ## 4. Programmatic navigation — the one real integration task
 
-The interceptor sees what the *visitor* does — clicks and form submissions. It cannot see what *code* does: `location.assign()`, `location.href = …`, `location.replace()`, `form.submit()`, server redirects. Those end the session while a page is unframed — which only happens under `iframeOnNavigate: true`, on the landing page before the first link click. Under the default eager wrap this section matters much less, but do the sweep anyway if the developer opts into deferred mode.
+The interceptor sees what the *visitor* does — clicks and form submissions. It cannot see what *code* does: `location.assign()`, `location.href = …`, `location.replace()`, `form.submit()`, server redirects. Those end the session while a page is unframed — under `iframeOnNavigate: true`, that's the landing page until the first navigation; under the default eager wrap, it's only the short window before the framed copy loads. The sweep matters most in deferred mode, but do it either way.
 
 The fix is to announce the navigation instead of performing it:
 
@@ -80,14 +86,16 @@ For forms, prefer `form.requestSubmit()` over `form.submit()` — `requestSubmit
 1. Start a session on the landing page, click an internal link — the conversation continues, the address bar follows (`syncHistory` is on by default).
 2. Click a cross-origin or excluded link — the tab really navigates and the session ends (that's correct, say so).
 3. Trigger any programmatic navigation the site has — the session survives it via the event.
-4. Back/forward buttons — the frame follows while wrapped.
+4. Back/forward buttons — the frame follows while wrapped. `trapBackNavigation` (default `true`) stops Back from leaving the site while it's framed, since leaving would end the session; a long-press on Back can still leave. Set it to `false` if visitors should be able to leave with Back.
 
 ## Pitfalls
 
 | Symptom | Cause | Fix |
 |---|---|---|
 | Session dies on the first navigation despite persistence | `iframeOnNavigate: true` + a programmatic navigation on the still-unframed landing page | §4 — dispatch `PERSIST_NAVIGATE_EVENT`, or drop back to the default eager wrap |
-| Avatar renders in the wrong place / `mountContainer` ignored | Persistence requires the avatar in the top-level document | Expected — `mountContainer` is ignored when persistence is on |
+| Avatar floats in the corner instead of in your container | Persistence requires the avatar in the top-level document | Expected — with persistence on, the SDK ignores `layout.type: "inline"` and `layout.mountContainer`, and warns in the console if you pass `mountContainer` |
+| Launcher reappears only after a page reload | A persisted session that ends reloads the page without the frame | Expected with launcher + persistence |
+| Page scripts or analytics run twice | The default eager wrap loads the landing page again inside the frame | Count page views accordingly, or use `iframeOnNavigate: true` |
 | Auth or checkout page breaks inside the frame | Page that can't/shouldn't be framed | Add it to `exclude` — breaking out there is correct |
 | Session ends on a link that looks internal | Different subdomain = cross-origin | Serve it same-origin, add the host to `persistence.include.domains`, or accept the break-out |
 | "Excluding `/check` also excluded `/checkout`" | It doesn't — matching is at path-segment boundaries | Check the actual entry; `/check` does not match `/checkout` |
