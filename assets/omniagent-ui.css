@@ -7,8 +7,9 @@
  * Design System: pure black canvas, Napster Pink (#DD52CB) on the load-bearing
  * accent, Inter for headings, IBM Plex Mono for metadata, every corner rounded.
  *
- * The avatar mounts inside .omniagent-mount; pass that element (or its id,
- * #omniagent-mount) as `mountContainer` to the Web SDK init() call.
+ * The avatar mounts inside .omniagent-mount. Pass that element (or its id,
+ * #omniagent-mount) to the Web SDK's init() as
+ * `layout: { type: "inline", mountContainer }`.
  */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=IBM+Plex+Mono:wght@500&display=swap');
@@ -121,33 +122,13 @@
   background: #000;
 }
 
-.omniagent-loading {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.6);
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: 500;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  pointer-events: none;
-  transition: opacity 240ms ease;
-}
-
-.omniagent-loading.is-hidden {
-  opacity: 0;
-}
-
 /* ---------- SDK root fill ---------------------------------------------- */
 /*
- * Pass `className: "omniagent-sdk-root"` to NapsterCompanionApiSdk.init().
- * The SDK attaches this class to its own root element; the rule below makes
- * the SDK fill the .omniagent-mount container cleanly without overflow or
- * alignment issues. Pair it with `avatarStyle: { view: "rectangle" }` in
- * init() — that's what this panel layout is designed for.
+ * Pass `style: { view: "rectangle", className: "omniagent-sdk-root" }` to
+ * NapsterCompanionApiSdk.init() (Web SDK 2). The SDK adds this class to its
+ * own root element, and the rule below makes the SDK fill the .omniagent-mount
+ * container without overflow or alignment issues. "rectangle" is the view this
+ * panel layout is designed for.
  */
 .omniagent-sdk-root {
   position: absolute !important;
