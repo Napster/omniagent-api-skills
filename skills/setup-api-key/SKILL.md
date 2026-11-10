@@ -91,6 +91,7 @@ print(res.status_code)  # 200
 |---|---|---|
 | `401 Unauthorized` | Key missing, expired, or wrong | Re-check `NAPSTER_API_KEY`; regenerate in the dashboard |
 | Used `Authorization: Bearer …` | Wrong auth scheme | This API uses `X-Api-Key: <key>`, not bearer tokens |
+| `403 InactiveSubscription` | The organization is out of credits. Starting sessions and creating, changing or deleting companions, digital twins, recordings and SIP connections are blocked | Add credits. The key stays valid and reads keep working, so don't rotate it |
 | Works locally, fails in CI | Env var not set in CI | Add `NAPSTER_API_KEY` to the CI/secret store |
 | Key visible in browser network tab | Key used client-side | The key is server-side only — see [[deploy-webrtc]] for the token pattern |
 

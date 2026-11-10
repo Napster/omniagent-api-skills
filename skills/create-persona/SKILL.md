@@ -96,7 +96,7 @@ A `headline` (short tagline, e.g. "Senior Tech Support Specialist") is set after
 `version` picks the avatar rendering model:
 
 - **`v1`** (default) — generated from a still image (`pictureUrl`, or auto-generated from the description). Fast, good quality.
-- **`v2`** — higher quality with the best lip sync, natural expressions, and cleaner facial hair. Give it a `videoUrl` (a reference video) for the best result, though it also accepts a `pictureUrl`. v2 generation can take significantly longer (up to several hours). **v2 must be enabled for your organization first** — until then, creating (or connecting to) a v2 persona fails with `CompanionV2NotEnabled`; contact Napster with your organization ID (no extra charge).
+- **`v2`** — higher quality with the best lip sync, natural expressions, and cleaner facial hair. Give it a `videoUrl` (a reference video) for the best result, though it also accepts a `pictureUrl`. v2 generation can take significantly longer (up to several hours). **v2 must be enabled for your organization first** — until then, creating a v2 persona fails with `400` and `CompanionV2NotEnabled`, and sessions with an existing v2 persona run on v1. Contact Napster with your organization ID (no extra charge).
 
 Use v2 for customer-facing avatars where realism matters; v1 when speed is more important. For the full comparison, check the docs (`building-your-omniagent/avatar-models`).
 
@@ -155,7 +155,8 @@ Don't block your whole flow on `completed` if you only need to use the persona �
 |---|---|---|
 | `400` on create | Missing `description` | `description` is required |
 | `400` on `ethnicity` | Unsupported value | Use a value from `/public/companions/ethnicities` |
-| `CompanionV2NotEnabled` | `"version": "v2"` but v2 isn't enabled for the org | Request v2 enablement from Napster, or use `v1` |
+| `400 CompanionV2NotEnabled` | `"version": "v2"` but v2 isn't enabled for the org | Request v2 enablement from Napster, or use `v1` |
+| `403 InactiveSubscription` on create, update or delete | The organization is out of credits | Add credits. Reads keep working |
 | Avatar looks wrong | Low-quality source image | Use a 16:9, well-lit image; person looking into the camera, waist up |
 
 ## Next steps
