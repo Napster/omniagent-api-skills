@@ -25,7 +25,7 @@ Returns `{ token, connection: { id, … } }`. Store `connection.id` to fetch the
 
 For a **text-only** session, add `modality: "text"` to the body (`{ "channelType": "websocket", "modality": "text" }`) — see [Text-only sessions](#text-only-sessions) below. Omit `modality` for audio (the default).
 
-The fallback for assembling a session without an agent is `POST /public/ws-connections` (companionId + functions + knowledge; `modality` works there too). Prefer the agent path.
+The fallback for assembling a session without an agent is `POST /public/ws-connections` (companionId + functions + knowledge, plus `providerConfig` with `voiceId` and `settings`; `modality` works there too). Prefer the agent path.
 
 To end a live session from your server, call `DELETE /public/connections/{connection.id}` — it closes immediately with `closeReason: "connection_aborted"` (`400 ConnectionNotFound` if it already ended).
 
@@ -51,7 +51,7 @@ Open the socket before `expiresAt` — if the client doesn't connect in time, th
 
 ## 3. Open the connection
 
-Pass `url` straight to your WebSocket client — the token is already in the URL, so set no auth header or query param. The `https` URL upgrades to a secure WebSocket automatically; don't rewrite the scheme:
+Pass `url` to your WebSocket client — the token is already in the URL, so set no auth header or query param. The browser `WebSocket` and Node's `ws` accept the `https` URL as-is and upgrade it to a secure WebSocket. Python's `websocket-client` and `websockets` accept only `ws://` and `wss://`, so replace `https://` with `wss://` first:
 
 ```js
 import WebSocket from "ws";
@@ -65,8 +65,9 @@ ws.on("message", (data) => {
 
 ```python
 import websocket
+ws_url = url.replace("https://", "wss://", 1)  # Python clients need a wss:// URL
 ws = websocket.WebSocketApp(
-    url,
+    ws_url,
     on_open=lambda ws: print("connected"),
     on_message=lambda ws, msg: handle(json.loads(msg)),
 )
@@ -99,7 +100,7 @@ function handle(msg) {
 }
 ```
 
-Events (`avatar_state_changed`, `talk_state_changed`, `message_received`) and client commands (`send_message`, `set_settings`, `send_function_output`) are identical to WebRTC — see [[session-runtime]]. Also handle the session errors and shutdown events — `avatar_connection_warning` (`disconnect_after` 60/30/10 s before an idle close; sessions close after 3 minutes idle unless the agent sets `disableIdleTimeout`), `session_expired`, `no_credits_left`, `provider_connection_aborted` (`{ error: { code, message } }`), and `reaching_rate_limits` — so a headless client can report why a session ended.
+Events (`avatar_state_changed`, `talk_state_changed`, `message_received`) and client commands (`send_message`, `set_settings`, `send_function_output`) are identical to WebRTC — see [[session-runtime]]. Also handle the session errors and shutdown events — `avatar_connection_warning` (`disconnect_after` 60/30/10 s before an idle close; sessions close after 3 minutes idle unless the agent sets `disableIdleTimeout`), `session_expired`, `no_credits_left`, `provider_connection_aborted` (`{ error: { code, message } }`), `reaching_rate_limits`, and `error` (`{ message }`: a rejected `set_settings`, after which the session continues; a required WebSocket tool that couldn't connect, closing with `function_connection_failed`; or a session that couldn't start) — so a headless client can report why a session ended. `avatar_state_changed` can also report `failed`, with `data.error_details`, when the session couldn't be set up; it closes with `avatar_allocation_failed`.
 
 ## 5. Barge-in (interruption)
 
@@ -132,7 +133,7 @@ In a text session you **don't** use `send_audio` / `audio_received`. Send the us
 { "event": "message_received", "data": { "message": { "role": "assistant", "action": "delta", "content": "Hi" } } }
 ```
 
-A text session has no speech, so speaking-related events never fire — no turn detection or barge-in, and no `talk_state_changed`. You still receive `message_received`, `avatar_state_changed`, and the other non-speech events — including tool calls (`function_implicitly_called`) and the session errors and shutdown events (`avatar_connection_warning`, `session_expired`, `no_credits_left`, `provider_connection_aborted`). Text is a **modality**, not a separate channel: it always runs over WebSocket (WebRTC is for audio + video).
+A text session has no speech, so speaking-related events never fire — no turn detection or barge-in, and no `talk_state_changed`. You still receive `message_received`, `avatar_state_changed`, and the other non-speech events — including tool calls (`function_implicitly_called`) and the session errors and shutdown events (`avatar_connection_warning`, `session_expired`, `no_credits_left`, `provider_connection_aborted`, `error`). Text is a **modality**, not a separate channel: it always runs over WebSocket (WebRTC is for audio + video).
 
 ## Common errors
 
@@ -144,7 +145,11 @@ A text session has no speech, so speaking-related events never fire — no turn 
 | No audio / garbled | Wrong audio format | Must be PCM16, 16 kHz, mono, base64 |
 | Agent talks over itself | Mic muted during playback or no echo cancellation | Keep mic open; enable `echoCancellation` |
 | Agent won't stop on interruption | Buffered audio not cleared | Flush playback on `speech_started` |
-| Socket opens, then closes with `provider_connection_aborted` | Provider rejected the config (`invalid_voice`, `invalid_credentials`, `instructions_too_long`, `connection_failed`) — this is not a 400 at connection creation | Fix the agent or API key, then open a new session |
+| Socket opens, then closes with `provider_connection_aborted` | Provider rejected the config (`invalid_voice`, `invalid_model`, `invalid_credentials`, `instructions_too_long`, `connection_failed`) — this is not a 400 at connection creation | Fix the agent or API key, then open a new session |
+| Python client rejects the URL | Python WebSocket libraries need `ws://` / `wss://` | Replace `https://` with `wss://` before connecting |
+| `400 ProviderNotEnabled` creating the session | The API key's provider isn't enabled for your organization | Use a key with an enabled provider, or ask Napster to enable it |
+| `403 InactiveSubscription` creating the session | The organization is out of credits | Add credits. The key stays valid |
+| `error` event | A `set_settings` was rejected, a required WebSocket tool couldn't connect, or the session couldn't start | Log `data.message`, but don't match on its text |
 | Session closes with `connection_timeout` | Socket opened after `expiresAt` | Connect right after creating the connection |
 | `avatar_connection_warning`, then close (`idle_timeout`) | 3 minutes with no audio or messages | Keep streaming, or set `disableIdleTimeout` on the agent |
 | `429 RequestRateLimitExceeded` creating the session | Over 1 connection request/second per API key (shared across all connection endpoints) | Honor the `Retry-After` header |
