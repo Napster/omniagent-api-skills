@@ -7,8 +7,8 @@ description: Give an Omniagent domain expertise — upload documents to a knowle
 
 Two ways to ground an agent in your content:
 
-- **Knowledge base** — upload documents; the agent retrieves relevant passages during a conversation. Use for open-ended material (manuals, specs, guides).
-- **FAQ collection** — curated question/answer pairs; when a user's question is **semantically similar** to one of yours (not an exact string match), the agent answers with the answer you defined instead of generating one. Use for high-stakes, controlled answers (pricing, policy, compliance).
+- **Knowledge base** — upload documents; the agent retrieves relevant passages during a conversation. Use for open-ended material (manuals, specs, guides). When a question touches the documents, the agent answers only from what the search finds or from facts in its instructions. If neither covers it, the agent says the documents don't cover that point; it doesn't fill the gap from general knowledge or a web search, even with `useWebSearch` on.
+- **FAQ collection** — curated question/answer pairs; when a user's question is **semantically similar** to one of yours (not an exact string match), the agent answers with the answer you defined instead of generating one. When a question touches your FAQs, it answers from the approved answers or from facts in its instructions, and can combine the two. If neither covers the question, it says the approved answers don't cover that point. Use for high-stakes, controlled answers (pricing, policy, compliance).
 
 Both attach to an agent by ID ([[create-agent]] / [[manage-agents]]).
 
