@@ -63,6 +63,7 @@ const EXTERNAL_CLIENT = env.EXTERNAL_CLIENT_ID || undefined;
 const COMPANION_ID = env.COMPANION_ID;
 const VOICE_ID     = env.COMPANION_VOICE || 'alloy';
 const FUNCTIONS    = (env.COMPANION_FUNCTIONS || '').split(',').map(s => s.trim()).filter(Boolean);
+const USE_WEB_SEARCH = env.COMPANION_WEB_SEARCH === 'true';
 
 if (!NAPSTER_API_KEY) {
   console.error('[token-server] Missing NAPSTER_API_KEY in local-token-server/.env');
@@ -102,10 +103,13 @@ async function issueToken() {
     if (EXTERNAL_CLIENT) body.externalClientId = EXTERNAL_CLIENT;
   } else {
     // Fallback: assemble the session from a persona on every request.
+    // Web search is off unless the request turns it on, so set
+    // COMPANION_WEB_SEARCH=true in .env if the agent should search the web.
     url = `${API_BASE}/public/connections`;
     body = {
       companionId: COMPANION_ID,
       functions: FUNCTIONS,
+      useWebSearch: USE_WEB_SEARCH,
       providerConfig: {
         voiceId: VOICE_ID,
         settings: {
