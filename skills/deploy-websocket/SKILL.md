@@ -15,7 +15,7 @@ WebSocket is the **video-free** channel: a lightweight connection ideal for serv
 ## 1. Create a session
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/agents/agent_abc123/connections \
+curl -X POST https://napster-api.napster.com/public/agents/agent_abc123/connections \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "channelType": "websocket" }'
@@ -114,7 +114,7 @@ Turn detection is always on. When the user speaks over the agent, the server sen
 Set `modality: "text"` on the connection to run a **typed, text-only** session — no audio in or out, no avatar. Everything else (token, socket) is the same; only the message protocol differs.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/agents/agent_abc123/connections \
+curl -X POST https://napster-api.napster.com/public/agents/agent_abc123/connections \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "channelType": "websocket", "modality": "text" }'

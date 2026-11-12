@@ -45,7 +45,7 @@ The rest of this skill covers, in order: per-session configuration set at connec
 Set these on the connection call (`POST /public/agents/{agentId}/connections`), not on the agent:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/agents/agent_abc123/connections \
+curl -X POST https://napster-api.napster.com/public/agents/agent_abc123/connections \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -206,7 +206,7 @@ async function handleData(msg) {
 ## Ending a session from your backend
 
 ```bash
-curl -X DELETE https://companion-api.napster.com/public/connections/sess_xyz789 \
+curl -X DELETE https://napster-api.napster.com/public/connections/sess_xyz789 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 

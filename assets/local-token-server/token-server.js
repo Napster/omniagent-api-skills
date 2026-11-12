@@ -54,7 +54,7 @@ function loadEnv(p) {
 
 const env = { ...loadEnv(ENV_PATH), ...process.env };
 const NAPSTER_API_KEY = env.NAPSTER_API_KEY;
-const API_BASE        = env.COMPANION_API_BASE || 'https://companion-api.napster.com';
+const API_BASE        = env.COMPANION_API_BASE || 'https://napster-api.napster.com';
 const AGENT_ID        = env.AGENT_ID;
 const CHANNEL_TYPE    = env.CHANNEL_TYPE || 'webrtc';
 const EXTERNAL_CLIENT = env.EXTERNAL_CLIENT_ID || undefined;

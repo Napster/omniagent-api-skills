@@ -24,7 +24,7 @@ A Station has two screens: a small one showing the agent's avatar, and a large *
 `PUT` the `kiosk` channel config on the agent. Name the experience with `theme`, point at it with `url`, and use `initialSpeech` to tell the agent how to open with each visitor.
 
 ```bash
-curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk \
+curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/kiosk \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -37,7 +37,7 @@ curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channel
 ```python
 import os, requests
 requests.put(
-    "https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk",
+    "https://napster-api.napster.com/public/agents/agent_abc123/channels/kiosk",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={
         "theme": "Lobby Concierge",
@@ -67,18 +67,18 @@ Omit the overrides to inherit the agent's defaults. Like the phone channel — a
 
 ```bash
 # Get current kiosk config
-curl https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk \
+curl https://napster-api.napster.com/public/agents/agent_abc123/channels/kiosk \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 
 # Remove the kiosk channel config
-curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123/channels/kiosk \
+curl -X DELETE https://napster-api.napster.com/public/agents/agent_abc123/channels/kiosk \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
 To end a live kiosk conversation from your backend (for example, to free the Station for the next visitor):
 
 ```bash
-curl -X DELETE https://companion-api.napster.com/public/connections/$CONNECTION_ID \
+curl -X DELETE https://napster-api.napster.com/public/connections/$CONNECTION_ID \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
