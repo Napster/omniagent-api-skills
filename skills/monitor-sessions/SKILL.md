@@ -119,7 +119,7 @@ Per tool: `state`, `startedAt` / `connectedAt` / `failedAt` (with `error {code, 
 To see which tools the agent called, what it passed them, and what they returned, call `GET /public/sessions/{sessionId}/items`. It returns the session's messages and tool calls in one paginated list, ordered by time:
 
 ```bash
-curl "https://companion-api.napster.com/public/sessions/sess_abc123/items?pageSize=20" \
+curl "https://napster-api.napster.com/public/sessions/sess_abc123/items?pageSize=20" \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
