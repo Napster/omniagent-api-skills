@@ -202,6 +202,8 @@ curl -X PUT https://napster-api.napster.com/public/functions/fn_abc123 \
 curl -X DELETE https://napster-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
+The update body is the tool's full definition — the same body as create. The update replaces the tool, so include every field you want to keep.
+
 ## Common errors
 
 | Symptom | Likely cause | Fix |
