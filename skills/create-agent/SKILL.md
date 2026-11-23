@@ -111,8 +111,8 @@ print(res.json()["id"])  # agent_…
 
 Recommended turn-detection defaults for voice — the API defaults are too trigger-happy and cut the agent off on breaths and background noise:
 
-```json
-{ "threshold": 0.9, "prefix_padding_ms": 400, "silence_duration_ms": 500 }
+```json request="POST /public/agents"
+{ "providerSettings": { "turnDetection": { "threshold": 0.9, "prefix_padding_ms": 400, "silence_duration_ms": 500 } } }
 ```
 
 If the agent still interrupts itself, raise `threshold` toward `0.95` or `silence_duration_ms` toward `800`. See [[session-runtime]] for tuning these live with `set_settings` (Realtime only — on Cascade, `set_settings` changes only `instructions` and inline tools).

@@ -42,7 +42,7 @@ curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/
 
 The response is the channel config, including the provisioned **`voipEndpoint`** — this is the **webhook URL** Twilio will call on an incoming call:
 
-```json
+```json response="PUT /public/agents/{agentId}/channels/{channelType}"
 {
   "id": "chanconfig_abc123",
   "channelType": "voip",
@@ -218,7 +218,7 @@ Human handoff is available on the **SIP path only**. Set it on the SIP channel c
 
 To send callers to different teams, add up to 10 `routes`, each an `extension` (same format, unique across routes) plus a plain-language `purpose` (≤ 200 characters):
 
-```json
+```json request="PUT /public/agents/{agentId}/channels/{channelType}"
 { "humanHandoff": { "enabled": true, "transferExtension": "200",
   "routes": [
     { "extension": "210", "purpose": "Billing questions, invoices, and refunds" },

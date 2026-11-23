@@ -71,7 +71,7 @@ curl https://napster-api.napster.com/public/sessions/sess_abc123 \
 
 Adds `conversation.items` — each message in chronological order with `role` (`User`, `Assistant`, or `System`), `text`, and `timestamp` (Unix seconds):
 
-```json
+```json response="GET /public/sessions/{sessionId}"
 {
   "id": "sess_abc123",
   "sessionType": "webrtc",
@@ -104,11 +104,13 @@ A session with no messages, such as one that failed before anyone spoke, has **n
 
 Session details also include `functionStates` — the connection lifecycle of each **WebSocket-based** tool (HTTP/implicit tools never appear; they hold no session-long connection). Use it to answer "did my tool connect, when, and why not":
 
-```json
-"functionStates": [
-  { "name": "get_order_status", "state": "connected", "startedAt": "2026-08-14T10:15:02Z", "connectedAt": "2026-08-14T10:15:03Z" },
-  { "name": "check_inventory", "state": "failed", "startedAt": "2026-08-14T10:15:02Z", "failedAt": "2026-08-14T10:15:07Z", "error": { "code": "connection_failed", "message": "WebSocket handshake timed out" } }
-]
+```json response="GET /public/sessions/{sessionId}"
+{
+  "functionStates": [
+    { "name": "get_order_status", "state": "connected", "startedAt": "2026-08-14T10:15:02Z", "connectedAt": "2026-08-14T10:15:03Z" },
+    { "name": "check_inventory", "state": "failed", "startedAt": "2026-08-14T10:15:02Z", "failedAt": "2026-08-14T10:15:07Z", "error": { "code": "connection_failed", "message": "WebSocket handshake timed out" } }
+  ]
+}
 ```
 
 Per tool: `state`, `startedAt` / `connectedAt` / `failedAt` (with `error {code, message}`) / `canceledAt` — canceled means the user dropped the session (closed the tab) before the tool finished connecting. Only the timestamps that occurred are present. What the *session* does about a slow or failed tool socket is the tool's `connectionBehavior` setting — see [[create-tool]].
@@ -124,7 +126,7 @@ curl "https://napster-api.napster.com/public/sessions/sess_abc123/items?pageSize
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
-```json
+```json response="GET /public/sessions/{sessionId}/items"
 {
   "items": [
     { "type": "message", "timestamp": 1710000010000,
