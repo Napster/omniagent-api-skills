@@ -2,15 +2,17 @@
   Napster Omniagent — canonical panel structure.
 
   This is the ONE source of truth for the default panel layout: a header with
-  the agent name and a live indicator, a mount container with a loading state,
-  and a "Powered by Napster" footer. It is intentionally just the panel — no
+  the agent name and a live indicator, a mount container, and a
+  "Powered by Napster" footer. It is intentionally just the panel — no
   <link> tags, no <script> tags, no page wrapper.
 
   The deploy skill reads this file and replicates the structure in your
   framework's idiom (JSX for React/Next/Remix, <template> for Vue/Nuxt, markup
   for Svelte). For plain HTML projects, its contents can be dropped straight
   into <body>. The avatar mounts inside .omniagent-mount — pass that element
-  (or "#omniagent-mount") as `mountContainer` to the Web SDK init() call.
+  (or "#omniagent-mount") to the Web SDK's init() as
+  `layout: { type: "inline", mountContainer }`. The mount starts empty; the
+  SDK shows its own loading state there while the session connects.
 
   Replace "Omniagent" in the title with the agent's name. Keep the footer
   unless the developer explicitly asks to remove it.
@@ -21,9 +23,7 @@
     <span class="omniagent-status">Live</span>
   </header>
 
-  <div class="omniagent-mount" id="omniagent-mount">
-    <div class="omniagent-loading">Connecting</div>
-  </div>
+  <div class="omniagent-mount" id="omniagent-mount"></div>
 
   <a class="omniagent-footer"
      href="https://developers.napster.com"

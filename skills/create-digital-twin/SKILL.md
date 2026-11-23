@@ -10,10 +10,10 @@ A **digital twin** is a persona based on a real person — it uses their actual 
 Reach for this when the developer wants the agent to *be* a specific person — a founder, an executive, a brand spokesperson — not a generated character.
 
 <Callout type="warn">
-**Consent is required first.** An admin must enable digital twins for the organization in the dashboard. Without it, `POST /public/digital-twins` fails with `DigitalTwinConsentRequired`. This is a legal gate — creating a likeness of a real person needs their consent — so don't work around it; have the admin enable it.
+**Consent is required first.** An admin must enable digital twins for the organization in the dashboard. Without it, `POST /public/digital-twins` fails with `403` and `DigitalTwinConsentRequired`. This is a legal gate — creating a likeness of a real person needs their consent — so don't work around it; have the admin enable it.
 </Callout>
 
-Digital twins work with Realtime and Cascade API keys — not with Microsoft Foundry keys.
+Digital twins work with every API key type except Microsoft Foundry.
 
 ## Create the digital twin
 
@@ -70,7 +70,7 @@ print(res.json()["id"])  # comp_… — a persona ID, same as any companion
 | `voiceUrl` | string | No | Recording of the person's voice, used to clone it. Optional for `v2` (see below). Must be publicly reachable over HTTPS. Formats: mp3, wav, m4a, flac, ogg, webm, mp4; max 10 MB; 60–300 seconds of natural speech. |
 | `videoUrl` | string | No | Reference video of the person speaking — the `v2` input; best lip sync and expressions. |
 | `pictureUrl` | string | No | Reference image, if you don't have a video. |
-| `version` | string | No | Avatar model: `v1` (default, from a still image) or `v2` (higher quality). v2 must be enabled for the organization first, or creation fails with `CompanionV2NotEnabled`. |
+| `version` | string | No | Avatar model: `v1` (default, from a still image) or `v2` (higher quality). v2 must be enabled for the organization first. |
 | `tags` | object | No | String key-value labels. |
 
 All hosted URLs (`voiceUrl`, `videoUrl`, `pictureUrl`) must be **publicly reachable over HTTPS** — the API fetches them during generation. A `localhost` URL, an expiring signed URL, or anything behind auth fails.
@@ -88,12 +88,12 @@ Like a custom persona, a digital twin's avatar is generated asynchronously. Fetc
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `DigitalTwinConsentRequired` | Digital twins not enabled for the org | An admin must enable digital twins in the dashboard first |
+| `403 DigitalTwinConsentRequired` | Digital twins not enabled for the org | An admin must enable digital twins in the dashboard first. Check for `403`, not `400` |
+| `403 InactiveSubscription` | The organization is out of credits | Add credits. Reads keep working |
 | `400` on create | Missing a required field | `firstName`, `lastName`, `description`, `gender`, `ethnicity`, `externalClientId` are all required |
 | `400` on `ethnicity` | Unsupported value | Use a value from `/public/companions/ethnicities` |
 | Generation fails | A `voiceUrl`/`videoUrl`/`pictureUrl` isn't publicly reachable | Host on public HTTPS (CDN or object storage with public read) |
 | Poor lip sync on v2 | Weak reference video | Use 1–5 min of natural speech, head-and-shoulders, evenly lit, clear audio |
-| `CompanionV2NotEnabled` | v2 not enabled for the org | Ask Napster to enable v2, or use `v1` |
 | `400` when opening a connection, cloned voice not ready | Twin's voice clone still generating | Wait for the twin's status to reach `readyToUse`, then reconnect |
 
 ## Next steps

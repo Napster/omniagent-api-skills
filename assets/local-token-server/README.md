@@ -36,17 +36,24 @@ node local-token-server/token-server.js
 ```
 
 The startup log echoes the mode (agent vs. companion) so you can confirm your
-`.env` loaded. Your browser code fetches a token from `POST /token` and passes it to the Web
-SDK. See the [`deploy-webrtc`](../../skills/deploy-webrtc/SKILL.md) skill.
+`.env` loaded. In the browser, you pass the Web SDK a `getToken` function that
+calls `POST /token` and returns the token. The SDK calls that function itself
+when it's ready to connect. See the
+[`deploy-webrtc`](../../skills/deploy-webrtc/SKILL.md) skill.
 
 ## Going to production
 
-Port the `/token` handler into your own backend and bring three things forward:
+Port the `/token` handler into your own backend and bring these things forward:
 
 - **Authentication.** `/token` must authenticate the caller. This script does not.
 - **Rate limiting.** Cap how often a client can mint tokens.
 - **Per-session context.** Resolve `externalClientId` / `externalClientProfile`
   from the signed-in user, not from a static env var.
+- **Errors from the Napster API.** This script returns any failed token
+  request as a `500` with the API's response text. Your backend should pass the
+  real reason on. For example, `403` with `InactiveSubscription` means the
+  organization is out of credits, and `400` with `ProviderNotEnabled` means the
+  API key's provider isn't enabled for your organization.
 
 The API key lives only on the server. An `X-Api-Key` header must never reach the
 browser.

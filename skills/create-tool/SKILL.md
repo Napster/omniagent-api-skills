@@ -107,15 +107,21 @@ Need a tool for one session only? Register it mid-session with `set_settings` �
 | `url` | explicit only | HTTP or WebSocket endpoint that receives the call. |
 | `headers` | No | Custom headers sent with explicit calls (auth, routing). |
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
-| `connectionBehavior` | No | WebSocket explicit tools only — what the *session* does about your server's socket at start: `waitBeforeStart` (`true`: session waits for the socket to connect; `false`: starts after a short wait, tool joins late) and `abortOnFailure` (`true`: session aborted if the socket fails; `false`: session starts anyway, client notified). Both default `false` — a **behavior change**: the platform previously always waited and aborted, so existing `wss://` tools now get non-waiting starts unless they opt back in. |
+| `connectionBehavior` | No | WebSocket explicit tools only — what the *session* does about your server's socket at start: `waitBeforeStart` (`true`: session waits for the socket to connect; `false`: starts after a short wait, tool joins late) and `abortOnFailure` (`true`: session aborted if the socket fails, and if `waitBeforeStart` is also `true` the client first gets an `error` event; `false`: session starts anyway). Both default `false` — a **behavior change**: the platform previously always waited and aborted, so existing `wss://` tools now get non-waiting starts unless they opt back in. |
 | `prompt` | No (but important) | Controls *when* and *how* the agent calls the tool. See below. |
 
-**WebSocket tool servers get an `initialize` message first**: when the platform connects at session start (a `wss://` URL connects once per session, not per call), the first message is `{"type": "initialize", "data": {"session_id": …, "functions": […], "metadata": {…}}}`. The `metadata` object is **always included** — it carries the connection's `tags` / `external_client_id` / `external_client_profile` (snake_case; fields you didn't set at connection creation are simply absent). Set up per-session state there before the first tool call arrives.
+**WebSocket tool servers get an `initialize` message first**: when the platform connects at session start (a `wss://` URL connects once per session, not per call), the first message is `{"type": "initialize", "data": {"session_id": …, "functions": […], "metadata": {…}}}`. The `metadata` object is **always included** — it carries the connection's `tags` / `external_client_id` / `external_client_profile` (snake_case; fields you didn't set at connection creation are `null`). Set up per-session state there before the first tool call arrives.
+
+**HTTP tool servers get one `POST` per call**, with a JSON body of `{"item_id", "call_id", "name", "arguments", "metadata"}` (`arguments` is an object; `metadata` is the same `tags` / `external_client_id` / `external_client_profile` object, with unset fields `null`). Return the result as a JSON response body within **5 seconds**. A non-2xx status, a body that isn't JSON, or a slower response gives the agent "Failed to fetch information" instead, and nobody is told. Implicit tools get the same `metadata` in each `function_implicitly_called` event.
+
+**Phone calls set `external_client_id` for you.** On SIP and VoIP the platform creates the session, so `metadata.external_client_id` is the number on the other end of the call: on inbound SIP, the part of the caller's SIP URI before the `@`, exactly as your SIP server sends it (it can be an extension, a national number, or a number with `+`); on outbound SIP, the `destination` you passed; on VoIP, the caller's number in E.164 format. Normalize it before matching it against your records.
 
 **WebSocket explicit tools can also push, not just receive** — two message types, sendable on the tool socket at any time (not tied to a tool call). The tool socket is between the platform and the functions server and is INDEPENDENT of the session channel — both messages work for WebRTC sessions too. HTTP tools can't send either (no persistent connection):
 
 - `{"type": "ui_update", "data": <any JSON>}` → relayed verbatim to the CLIENT as an `{"event": "ui_update"}` server event. Drive UI from the backend in sync with the conversation (confirmation cards, progress, page state). One-way, no ack, not stored. Client handling in [[session-runtime]].
 - `{"type": "context_update", "data": {"content": "...", "role": "system", "trigger_response": false, "previous_item_id": null}}` → injected into the CONVERSATION context (server-side sibling of the client `send_message` command). `trigger_response: true` makes the agent respond immediately; `false` informs it silently from the next turn; `previous_item_id: null` appends at the end. Canonical pattern — the **deferred tool result**: a slow tool's handler returns an interim ack right away ("tell the user the result is coming"), then sends `context_update` with the real outcome when the work finishes, so the conversation is never blocked on a long-running call.
+
+The tool socket also **receives** `{"type": "function_call_timeout", "data": {"call_id", "function_name"}}` when a call your server is handling times out. Match `call_id` to the pending call and stop waiting on it; a result sent after that doesn't reach the agent.
 
 ## The `prompt` field is your main lever
 
@@ -149,12 +155,12 @@ Sequencing: `Only call after the user has provided name, date, and time.` / `Onl
 
 ### Long-running work — beat the timeout, answer later
 
-Tool calls time out after **10 seconds**: the model receives "Failed to fetch information", your client gets `function_call_timeout` (`{ call_id, function_name }`), and a result sent after that is dropped. If the real work can't finish that fast, don't block on it: **respond to the tool call immediately** with an interim acknowledgment — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }` — then deliver the real outcome when it's ready. HOW you deliver it depends on the tool type (not the session channel):
+Tool calls time out after **10 seconds**, or **5 seconds** for explicit tools with an HTTP URL. The model then receives "Failed to fetch information", and a result sent after that is dropped. Who's told depends on the tool type: for an implicit tool your client gets a `function_call_timeout` event, for a `wss://` tool your functions server gets a `function_call_timeout` message on the tool socket (both carry `{ call_id, function_name }`), and for an HTTP tool nobody is told — the request is cancelled. If the real work can't finish that fast, don't block on it: **respond to the tool call immediately** with an interim acknowledgment — e.g. `{ "status": "working", "message": "Generating that now, I'll have it shortly." }` — then deliver the real outcome when it's ready. HOW you deliver it depends on the tool type (not the session channel):
 
 | Tool type | Late-outcome delivery |
 |---|---|
 | Explicit, WebSocket `url` | Your functions server sends `context_update` on the tool socket (see above). `trigger_response: true` → agent announces it now; `false` → absorbed silently. |
-| Explicit, HTTP `url` | No persistent connection to push through — the work must fit in 10s. If it can't, switch the tool to a `wss://` URL. |
+| Explicit, HTTP `url` | No persistent connection to push through — the work must fit in 5 seconds. If it can't, switch the tool to a `wss://` URL. |
 | Implicit | Your CLIENT holds the session: send the outcome later with the `send_message` command (`role: "system"`) — see [[session-runtime]]. |
 
 **Explicit `wss://` tool — your FUNCTIONS SERVER delivers, on the tool socket:**
@@ -201,7 +207,8 @@ curl -X DELETE https://napster-api.napster.com/public/functions/fn_abc123 -H "X-
 |---|---|---|
 | Agent never calls the tool | Tool ID not in the agent's `functions` | Attach it via [[create-agent]] / [[manage-agents]] |
 | Tool fires at the wrong time | Weak `prompt` | Add explicit "Use when" / "Do NOT use when" conditions |
-| Explicit tool times out | Work slower than the 10s window | Return an interim ack immediately, then deliver the result late — `context_update` for `wss://` tools, or switch an HTTP tool to `wss://` (see "Long-running work" above) |
+| Explicit tool times out | Work slower than the window (10 s for `wss://` tools, 5 s for HTTP tools) | Return an interim ack immediately, then deliver the result late — `context_update` for `wss://` tools, or switch an HTTP tool to `wss://` (see "Long-running work" above) |
+| HTTP tool always gets "Failed to fetch information" | Non-2xx status, a body that isn't JSON, or slower than 5 s | Return `200` with a JSON body within 5 s. Nobody is notified of these failures, so log on your server |
 | Agent goes silent during a call | No preamble in a slow voice tool | Add "Before calling, say …" to the prompt |
 | Duplicate side effects | Client handled the same `call_id` twice | Dedupe by `call_id` ([[session-runtime]]) |
 

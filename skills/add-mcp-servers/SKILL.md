@@ -18,7 +18,7 @@ An MCP server is an external service exposing tools over the [Model Context Prot
 
 ## Before you start
 
-- **Architecture and provider.** MCP needs an API key on the **Realtime** architecture (Azure OpenAI or OpenAI provider). Cascade keys return `400 UnsupportedProvider`. Connectors (below) also need the **OpenAI** provider, which always uses your own OpenAI key; Azure OpenAI, the default, returns `400 UnsupportedProvider`. On Azure OpenAI, register the service's own MCP server as a per-user server instead.
+- **Architecture and provider.** MCP needs an API key on the **Realtime** architecture (Azure OpenAI or OpenAI provider). Any other key, such as a Cascade key, returns `400 UnsupportedProvider` when a session opens with MCP servers attached. Connectors (below) also need the **OpenAI** provider, which always uses your own OpenAI key; Azure OpenAI, the default, returns `400 UnsupportedProvider`. On Azure OpenAI, register the service's own MCP server as a per-user server instead.
 - **Channels.** MCP is unavailable on VoIP and SIP. A server attached to an agent does not apply on phone calls.
 - Ask the developer for the server's **URL** and how it authenticates before writing anything.
 
@@ -141,7 +141,7 @@ instance.sendCommand({
 
 `requireApproval: "always"` pauses every call until your client decides. Use it for tools with consequences — sending mail, issuing refunds, changing records.
 
-1. You receive an `mcp_approval_request` event (`action: "created"`) over the data channel with `item_id`, `server`, `tool` and the arguments.
+1. You receive a `message_received` event whose `data.message.type` is `mcp_approval_request` (`action: "created"`), with `item_id`, `server`, `tool` and the arguments in `content`.
 2. Show the user the choice.
 3. Reply with `send_mcp_approval`, passing `approval_request_id` (the `item_id`) and `approve`.
 
@@ -152,9 +152,11 @@ instance.sendCommand({
 });
 ```
 
-**15-second limit.** Unanswered requests are auto-rejected and you get `action: "cancelled"`. Build the UI before setting `always` — the agent gives no spoken sign it is waiting. `send_mcp_approval` is not yet in the Web SDK's typed command union, so TypeScript needs a cast.
+The request ends with `action: "completed"`, carrying `result` (`approved` or `rejected`) and `source`: `client` when your app answered with `send_mcp_approval`, or `voice` when the user answered the agent out loud. Clear the prompt on `completed` even if your app never sent anything, since the user may have answered by voice. `server` and `tool` are present on every action.
 
-Two more event types report activity. `mcp_tools` lists each server's tools at session start. On `action: "failed"`, `error` is a plain **string** naming the server (for example `"Failed to list tools for MCP server 'crm'"`) with no underlying cause — check the URL, `headers` and token. A failed server stays failed for the session. `mcp_call` tracks each invocation (`created`, then `completed` or `failed`, paired by `item_id`). MCP events put `type` at the top level with flat fields (no `data` wrapper). See [[session-runtime]] § MCP events.
+**15-second limit.** Unanswered requests are auto-rejected and you get `action: "cancelled"` (never a `completed`). Build the UI before setting `always` — the agent gives no spoken sign it is waiting. `send_mcp_approval` is not yet in the Web SDK's typed command union, so TypeScript needs a cast.
+
+Two more event types report activity. `mcp_tools` lists each server's tools at session start. On `action: "failed"`, `error` is a plain **string** naming the server (for example `"Failed to list tools for MCP server 'crm'"`) with no underlying cause — check the URL, `headers` and token. A failed server stays failed for the session. `mcp_call` tracks each invocation (`created`, then `completed` or `failed`, paired by `item_id`). All three arrive as `message_received` events, with the kind in `data.message.type` and the fields under `data.message` — `{ "event": "message_received", "data": { "message": { "type": "mcp_call", "action": "created", "item_id": "mcp_a1b2c3", "server": "gmail", "tool": "get_recent_emails", "content": "{\"top_k\": 3}" } } }`. Dispatch on `data.message.type`, not on `event`. See [[session-runtime]] § MCP events.
 
 ## Managing servers
 
@@ -177,7 +179,9 @@ Connectors never appear in `GET /public/mcp-servers`; that lists only servers yo
 | `400 McpServerValidationFailed` | The platform rejected the server definition | Read the error details, fix, retry |
 | `400 McpServerNotFound` on attach | ID does not exist | For `mcp.servers` it must be registered in your project; for `mcp.connectors` it must be one of the eight platform IDs |
 | `400 McpServerInUse` on delete | Still attached somewhere | Detach from every agent and channel config first |
-| `400 UnsupportedProvider` | The key's architecture or provider does not support MCP | MCP needs a **Realtime** key — Cascade keys don't support it; connectors also need the OpenAI provider, not Azure OpenAI |
+| `400 UnsupportedProvider` | The key's architecture or provider does not support MCP | MCP needs a **Realtime** key — other keys, such as Cascade, don't support it; connectors also need the OpenAI provider, not Azure OpenAI |
+| MCP events never reach your handler | Switching on `msg.event` or `msg.type` | MCP frames are `message_received`; dispatch on `msg.data.message.type` |
+| Approval prompt stays on screen | The user answered by voice | Clear it on `mcp_approval_request` `completed`, whatever `source` says |
 | `400 McpAuthorizationRequired` (any connection endpoint) | A server with `authorizationRequired: true`, or a connector, has no entry in `mcp.authorizations` | Pass the user's token |
 | `400 McpServerNotFound` on connect | An attached ID no longer exists, or a token names a server that isn't attached | Re-register or re-attach, or drop the stray token |
 | `400` token for a no-auth server | `authorizationRequired: false` but a token was sent | Remove it |

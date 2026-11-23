@@ -17,6 +17,8 @@ When this skill and the live docs disagree, **the docs win** — re-check with t
 | `401` despite a correct key | Wrong header | Use `X-Api-Key: <key>`, not `Authorization: Bearer` |
 | Works locally, 401 in CI/prod | Env var not set in that environment | Add `NAPSTER_API_KEY` to the secret store |
 | Microsoft Foundry key: session fails to start, Azure returns `401` | **Napster.API** has no role on the Foundry resource, the role hasn't taken effect yet, or the key's tenant ID is wrong | Assign **Foundry User** to **Napster.API** in the resource's Access control (IAM), wait a few minutes, check the tenant ID ([[setup-api-key]]) |
+| `403 InactiveSubscription` | The organization is out of credits. Starting sessions and creating, changing or deleting companions, digital twins, recordings and SIP connections are blocked; reads and agent, tool, knowledge and FAQ management keep working | Add credits. The key stays valid, so don't rotate it |
+| `403` where you expected `400` (`DigitalTwinConsentRequired`, `RecordingsApiNotEnabled`) | Access-denied errors return `403` since 1.7 | Check for `403` in your error handling |
 | Resource "not found" that you created | Key scoped to a different project | Use the key for the project the resource lives in |
 | Key visible in browser network tab | API key used client-side | Move issuance server-side; browser gets a token only |
 
@@ -38,14 +40,20 @@ Prevention: [[create-persona]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Avatar mounts but never speaks | Mic permission denied | Grant mic access — the SDK shows built-in recovery guidance when the mic is blocked; a `getUserMedia` preflight before init avoids it entirely |
+| Avatar mounts but never speaks | Mic permission denied | The SDK shows a card asking the visitor to allow the microphone in the browser's site settings, with a **Check again** button. For your own UI, watch `onSessionStatusChange` for `permissionBlocked`. Don't call `getUserMedia` yourself before `init` — if it stops on a denial, the SDK's card never shows |
 | Mic prompt never appears | Insecure context | Serve over `https` or `http://localhost`, not `file://` |
 | No prompt in VS Code preview | Simple Browser blocks media | Open in Chrome/Edge/Firefox/Safari |
-| `NotAllowedError` / "Failed to access user media" | Permission blocked or no preflight | The SDK surfaces built-in denied-mic guidance; preflight `getUserMedia` if you want your own error UI instead |
-| Avatar overflows / misaligned | Mount container not bounded | Use the `.omniagent-mount` box; don't fight the SDK with `!important` |
-| `sendCommand is not a function` | `init()` not awaited | `await NapsterCompanionApiSdk.init(...)` |
-| Session closes right after the client connects, with a `provider_connection_aborted` event | The provider rejected the config. `data.error.code` is `invalid_voice` (bad `voiceId`), `invalid_credentials` (API key credentials), `instructions_too_long`, or `connection_failed` | Fix the agent or API key and open a new session ([[create-agent]]) |
-| Green-screen ghost / halo / color showing through | Server and SDK out of sync | Set BOTH `useGreenVideo: true` on the webrtc channel config AND `avatarStyle.view: "silhouette"` in the SDK init — they have to match |
+| `NotAllowedError` / "Failed to access user media" in `onError` | Microphone blocked | Reported on the first denial only, not when a **Check again** retry is refused. The SDK's blocked card handles recovery |
+| Widget floats in the corner instead of in your container | `layout.type` isn't `"inline"` | Set `layout: { type: "inline", mountContainer }`. The floating widget always mounts on `document.body`. With persistence on, the widget always floats |
+| Avatar overflows / misaligned, or controls cut off | Mount container not bounded, or too small | Use the `.omniagent-mount` box from `omniagent-ui.css` with `style.className: "omniagent-sdk-root"` ([[deploy-webrtc]]). The console warns when an inline container is smaller than the controls need |
+| `init() requires a getToken() function` | Web SDK 1.x code on 2.0 | Pass a function that fetches and returns the token, not the token ([[deploy-webrtc]]) |
+| `sendCommand is not a function` | `init()` not awaited, or the launcher (`button.enabled`) is on | `await NapsterCompanionApiSdk.init(...)`. With the launcher, `init` resolves to a controller: use the instance `start()` returns, or `getInstance()` |
+| First command ignored (`Transport not available` in the console) | Sent before the session was live | `init` resolves before the session connects. Send it from `onAvatarReady` when `isReady` is `true` |
+| "SDK is already initialized" | A second `init` before `destroy()`, often React StrictMode's double mount | Call `destroy()` first; use the StrictMode-safe pattern in [[deploy-webrtc]] |
+| Session closes right after the client connects, with a `provider_connection_aborted` event | The provider rejected the config. `data.error.code` is `invalid_voice` (bad `voiceId`), `invalid_model` (the model or deployment on the key), `invalid_credentials` (API key credentials), `instructions_too_long`, or `connection_failed` | Fix the agent or API key and open a new session ([[create-agent]]). In Web SDK 2.0 it reaches `onError` |
+| Session closes with `avatar_allocation_failed` | The avatar couldn't start: `avatar_state_changed` with `failed` (`error_details.code` `initialization_failed` or `video_unavailable`) | Open a new session. It reaches `onError` in the Web SDK |
+| Video never appears, audio keeps going | Deferred video couldn't load: `avatar_state_changed` with `video_failed` | The session continues on audio. It reaches `onError` without ending the session |
+| Green-screen ghost / halo / color showing through | Server and SDK out of sync | Set BOTH `useGreenVideo: true` on the webrtc channel config AND `style.view: "silhouette"` in the SDK init — they have to match |
 
 Prevention: [[deploy-webrtc]], [[session-runtime]].
 
@@ -72,7 +80,11 @@ Prevention: [[deploy-websocket]].
 | (SIP) `lifecycleStatus: Failed` | Listener couldn't start | Read `status.message`; recheck `settings` |
 | (SIP) Calls ring, agent never answers | Number not routed to the trunk | Fix provider-side routing to the SIP endpoint |
 | (SIP) Agent won't transfer, or sends callers to the wrong team | Handoff off, `transferExtension` missing, or a vague route `purpose` | Enable `humanHandoff` on the SIP channel config with `transferExtension` (required when enabled or when `routes` is set). For several teams add `routes` (up to 10 `{ extension, purpose }`) with specific purposes; calls that match no purpose go to `transferExtension` |
-| (VoIP) Need human handoff | Not supported on VoIP today | SIP-only for now; switch the agent to the SIP path |
+| (VoIP) Need human handoff | Not supported on VoIP | Human handoff is SIP only; switch the agent to the SIP path |
+| (SIP) Transfer refused, caller stays with the agent | Your phone system rejected the extension | If the extension starts with `+`, the agent first retries once without it. Check the extension and your phone system's dial plan |
+| (SIP) Session closes with `transfer_failed` | Your phone system accepted the transfer, then it failed | Check the destination on your phone system. The `session.humanHandoff.started` webhook still fires ([[monitor-sessions]]) |
+| (SIP) Session closes with `call_gone` or `media_timeout` | The call ended without a normal hang-up, or no audio arrived for 30 seconds | Check your SIP server and network between it and the platform |
+| Call hangs up after 3 minutes of silence (`idle_timeout`) | Phone calls always close after 3 minutes without anyone speaking | Expected; `disableIdleTimeout` doesn't apply to SIP or VoIP |
 | Agent talks over the caller | Phone-side VAD too sensitive | Raise `silence_duration_ms` via the channel `providerSettings` override |
 | (SIP) Outbound `call` rejected on `destination` | SIP URI, spaces, or `*` / `#` in the number | Digits only: `+` followed by 7–15 digits, or up to 15 digits |
 | `400 TelephonyChannelNotAllowed` adding a SIP/VoIP channel | The agent is in puppeteer mode | Use `mode: "conversation"` for phone agents |
@@ -88,9 +100,10 @@ Prevention: [[deploy-phone]].
 | Side effects happen twice | Same `call_id` handled twice | Dedupe by `call_id` in a `Set` |
 | `JSON.parse(arguments)` throws | `arguments` already an object | Use it directly, don't parse |
 | Tool result ignored / odd reasoning | `output` stringified | Send a plain object, not a JSON string |
-| `function_call_timeout` fires | Handler slower than the 10s window | Return an interim ack immediately, then deliver the result late: `context_update` on the tool socket (explicit `wss://` tools) or client `send_message` (implicit) — see [[create-tool]] § Long-running work |
+| `function_call_timeout` fires | Handler slower than the 10 s window. Only implicit tools tell the client; a `wss://` server gets it on the tool socket | Return an interim ack immediately, then deliver the result late: `context_update` on the tool socket (explicit `wss://` tools) or client `send_message` (implicit) — see [[create-tool]] § Long-running work |
 | Explicit tool never reached | Bad `url` / unreachable server | Verify the endpoint and any auth `headers` |
-| Late `send_function_output` ignored | Sent after the 10s timeout (`function_call_timeout` carries `{ call_id, function_name }`) | Results after the timeout are dropped; send an interim result first |
+| HTTP tool always returns "Failed to fetch information" | Slower than 5 s, a non-2xx status, or a body that isn't JSON | Return `200` with a JSON body within 5 seconds. Nobody is notified, so log on your server ([[create-tool]]) |
+| Late `send_function_output` ignored | Sent after the 10 s timeout (`function_call_timeout` carries `{ call_id, function_name }`) | Results after the timeout are dropped; send an interim result first |
 | MCP tools missing or failing mid-session | `mcp_tools` `action: "failed"` (bad URL or credentials), or a per-user token expired | Fix the registration; refresh the token with `set_settings` `mcp.authorizations` ([[add-mcp-servers]]) |
 
 Prevention: [[create-tool]], [[session-runtime]].
@@ -112,18 +125,19 @@ Prevention: [[add-knowledge]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `400` when creating a connection | Something the API checks itself: missing `voiceId`, a digital twin whose cloned voice isn't ready, a tool / FAQ collection / MCP server that doesn't exist, MCP on an unsupported key (`UnsupportedProvider`), a missing per-user MCP token (`McpAuthorizationRequired`), puppeteer mode on a non-Cascade key (`UnsupportedSessionMode`) | Read the error code, fix, retry. Voice, credential and instruction-length problems are NOT `400`s — they arrive as `provider_connection_aborted` after the client connects |
+| `400` when creating a connection | Something the API checks itself: missing `voiceId`, a digital twin whose cloned voice isn't ready, a tool / FAQ collection / MCP server that doesn't exist, MCP on an unsupported key (`UnsupportedProvider`), a missing per-user MCP token (`McpAuthorizationRequired`), puppeteer mode on a non-Cascade key (`UnsupportedSessionMode`), an API key whose provider isn't enabled for your organization (`ProviderNotEnabled`) | Read the error code, fix, retry. Voice, credential and instruction-length problems are NOT `400`s — they arrive as `provider_connection_aborted` after the client connects |
 | `429 RequestRateLimitExceeded` on connect | Connection endpoints are limited to 1 request per second per API key, shared by `POST /public/connections`, `POST /public/ws-connections`, `POST /public/agents/{id}/connections` and `DELETE /public/connections/{id}` | Honor the `Retry-After` header (seconds) before retrying — don't hardcode a wait |
 | `409 ConcurrentSessionLimitReached` | At the 5-concurrent-sessions-per-transport cap (WebRTC/WebSocket/VoIP/SIP tracked separately) | Close idle sessions — they count until closed; contact support for higher limits |
 | Agent doesn't greet | No auto-greeting | Set `initialSpeech` on the connection, or send the greeting nudge on ready ([[session-runtime]]) |
 | Memory not recalled | Missing/changing `externalClientId` | Stable ID matching `^[A-Za-z0-9_-]{1,32}$` |
 | `externalClientId` rejected | Doesn't match the regex | Hash UUIDs/emails to ≤32 allowed chars |
-| Session closes with `closeReason: "idle_timeout"` | 3 minutes with no audio or messages (the client gets `avatar_connection_warning` with `disconnect_after` 60 / 30 / 10) | Keep traffic flowing, or set `disableIdleTimeout: true` on the agent |
+| Session closes with `closeReason: "idle_timeout"` | 3 minutes with no audio or messages (the client gets `avatar_connection_warning` with `disconnect_after` 60 / 30 / 10) | Keep traffic flowing, or set `disableIdleTimeout: true` on the agent. That doesn't apply to phone calls |
 | Session closes with `session_expired` / `no_credits_left` | Provider's maximum session length reached / org out of credits | Reconnect / add credits |
 | Need to end a live session from your backend | — | `DELETE /public/connections/{id}` (webrtc, websocket, kiosk only; sip/voip → `400 ConnectionAbortNotSupported`) |
 | `set_settings` `temperature` / `turn_detection` has no effect | Cascade key: mid-session only `instructions` and `inline_functions` change | Set them on the agent before the session |
 | Barge-in not detectable from `speech_started` (Cascade) | On Cascade, user speech events arrive after the transcript | Expect late speech events; cancellations report `reason: "interrupted"` |
-| Events look empty | Reading the wrong field | Log the whole message; key is `event` or `type` |
+| Events look empty | Reading the wrong field | Log the whole message; the event name is in `event`, and `message_received` fields (including MCP and tool frames) are under `data.message` |
+| `error` event | A `set_settings` was rejected (invalid value, or not supported on the channel, such as `modality: "text"` on WebRTC; nothing is applied), a required WebSocket tool couldn't connect (`function_connection_failed`), or a WebSocket session couldn't start | Log `data.message`, but don't match on its text ([[session-runtime]]) |
 | `set_settings` has no effect at all | Microsoft Foundry key — `set_settings` isn't supported | Change the agent in Foundry, save, and update the key's agent version |
 | `set_settings.instructions` wiped the persona | It replaces the full prompt | For context use `send_message role:system` instead |
 
@@ -133,7 +147,7 @@ Prevention: [[session-runtime]].
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| Mic blocked only inside an iframe | Missing permissions | `<iframe allow="microphone; camera; autoplay">` |
+| Mic blocked only inside an iframe | Missing permissions | `<iframe allow="microphone">`, plus `display-capture` for screen sharing |
 | Nothing works on `file://` | Not a secure context | Serve over `http://localhost` or `https` |
 | CORS error calling your token endpoint | Cross-origin without headers | Serve token endpoint same-origin or set CORS |
 | Mixed-content warning | `http` resource on an `https` page | Serve all resources over `https` |
