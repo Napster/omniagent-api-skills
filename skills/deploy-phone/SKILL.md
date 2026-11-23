@@ -159,6 +159,7 @@ curl -X POST https://napster-api.napster.com/public/sip-connections \
 | Field | Required | Description |
 |---|---|---|
 | `agentId` | Yes | Agent that answers calls on this connection. |
+| `name` | No | A label for this connection. |
 | `settings.server` | Yes | Your SIP provider's server address. |
 | `settings.port` | Yes | SIP port (typically `5060`). |
 | `settings.domain` | Yes | SIP domain. |
