@@ -80,6 +80,7 @@ print(res.json()["id"])  # agent_…
 
 ### Fields
 
+<!-- request="POST /public/agents" -->
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `companionId` | string | Yes | The persona that defines appearance and personality. |
@@ -100,6 +101,7 @@ print(res.json()["id"])  # agent_…
 
 `providerSettings` controls model behavior and audio processing. All fields apply on a **Realtime** key. On a **Cascade** key, `instructions` works, `turnDetection` applies only at session start, and `temperature` / `noiseReduction` are ignored. On a **Microsoft Foundry** key, the model, tools, and knowledge come from the Foundry agent — tools defined on the Napster API aren't used ([Connect a Microsoft Foundry agent](https://developers.napster.com/docs/guides/microsoft-foundry-agent)).
 
+<!-- request="POST /public/agents" field="providerSettings" -->
 | Field | Type | Notes |
 |---|---|---|
 | `temperature` | float | Lower (`0.3`) = focused, higher (`0.9`) = varied. |
@@ -109,8 +111,8 @@ print(res.json()["id"])  # agent_…
 
 Recommended turn-detection defaults for voice — the API defaults are too trigger-happy and cut the agent off on breaths and background noise:
 
-```json
-{ "threshold": 0.9, "prefix_padding_ms": 400, "silence_duration_ms": 500 }
+```json request="POST /public/agents"
+{ "providerSettings": { "turnDetection": { "threshold": 0.9, "prefix_padding_ms": 400, "silence_duration_ms": 500 } } }
 ```
 
 If the agent still interrupts itself, raise `threshold` toward `0.95` or `silence_duration_ms` toward `800`. See [[session-runtime]] for tuning these live with `set_settings` (Realtime only — on Cascade, `set_settings` changes only `instructions` and inline tools).

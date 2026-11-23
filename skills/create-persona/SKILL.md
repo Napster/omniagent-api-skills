@@ -77,6 +77,7 @@ print(res.json()["id"])  # comp_…
 
 ### Fields
 
+<!-- request="POST /public/companions" -->
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `description` | string | Yes | Role, personality, tone, communication style. Becomes the agent's base system prompt. |

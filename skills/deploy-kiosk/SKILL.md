@@ -49,6 +49,7 @@ requests.put(
 
 ### Fields
 
+<!-- request="PUT /public/agents/{agentId}/channels/{channelType}" -->
 | Field | Description |
 |---|---|
 | `theme` | The name of the experience that runs on the Station's main screen. |

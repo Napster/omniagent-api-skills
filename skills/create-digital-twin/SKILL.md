@@ -59,6 +59,7 @@ print(res.json()["id"])  # comp_… — a persona ID, same as any companion
 
 ### Fields
 
+<!-- request="POST /public/digital-twins" -->
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `firstName` | string | Yes | The person's first name. |

@@ -98,12 +98,13 @@ Need a tool for one session only? Register it mid-session with `set_settings` �
 
 ### Fields
 
+<!-- request="POST /public/functions" -->
 | Field | Required | Description |
 |---|---|---|
 | `data.name` | Yes | Function name the model calls. snake_case. |
 | `data.description` | Yes | What the tool does. The model reads this to decide relevance. |
 | `data.parameters` | Yes | JSON Schema for the arguments (`type`, `properties`, `required`). |
-| `flow` | Yes | `implicit` or `explicit`. |
+| `flow` | No | `implicit` or `explicit`. Defaults to `implicit`. |
 | `url` | explicit only | HTTP or WebSocket endpoint that receives the call. |
 | `headers` | No | Custom headers sent with explicit calls (auth, routing). |
 | `receiveMessages` | No | WebSocket explicit tools only — stream the live conversation to your endpoint. |
@@ -200,6 +201,8 @@ curl -X PUT https://napster-api.napster.com/public/functions/fn_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" -d '{ … }'                    # update
 curl -X DELETE https://napster-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
+
+The update body is the tool's full definition — the same body as create. The update replaces the tool, so include every field you want to keep.
 
 ## Common errors
 
