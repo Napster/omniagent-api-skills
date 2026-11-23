@@ -141,6 +141,7 @@ instance.sendCommand({
 
 `set_settings` — change session settings mid-session. All fields are optional; omitted fields keep their current values. Which fields work depends on the API key's architecture:
 
+<!-- not-api -->
 | Field | Architecture | Effect |
 |---|---|---|
 | `instructions` | Realtime, Cascade | Fully replaces the system prompt |

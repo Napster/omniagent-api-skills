@@ -155,6 +155,7 @@ curl -X POST https://napster-api.napster.com/public/sip-connections \
   }'
 ```
 
+<!-- request="POST /public/sip-connections" -->
 | Field | Required | Description |
 |---|---|---|
 | `agentId` | Yes | Agent that answers calls on this connection. |

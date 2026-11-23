@@ -51,6 +51,7 @@ curl -X POST https://napster-api.napster.com/public/mcp-servers \
   }'
 ```
 
+<!-- request="POST /public/mcp-servers" -->
 | Field | Required | Notes |
 |---|---|---|
 | `id` | Yes | **You choose it** — not generated. `^[a-zA-Z0-9_-]+$`, max 48 chars, unique per project. Cannot be changed later |

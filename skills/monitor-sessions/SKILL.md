@@ -26,6 +26,7 @@ Each item includes `id`, `companionId` (+ `companion`), `functions`, `knowledgeB
 
 ### Filters
 
+<!-- request="GET /public/sessions" -->
 | Parameter | Description |
 |---|---|
 | `companionId` | Filter by persona |

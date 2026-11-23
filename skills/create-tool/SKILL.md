@@ -98,6 +98,7 @@ Need a tool for one session only? Register it mid-session with `set_settings` â†
 
 ### Fields
 
+<!-- request="POST /public/functions" -->
 | Field | Required | Description |
 |---|---|---|
 | `data.name` | Yes | Function name the model calls. snake_case. |
