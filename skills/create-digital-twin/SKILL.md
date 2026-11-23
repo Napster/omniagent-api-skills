@@ -20,7 +20,7 @@ Digital twins work with Realtime and Cascade API keys — not with Microsoft Fou
 Provide the person's identity, a voice recording, and a reference image or video for the avatar.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/digital-twins \
+curl -X POST https://napster-api.napster.com/public/digital-twins \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,7 +40,7 @@ curl -X POST https://companion-api.napster.com/public/digital-twins \
 import os, requests
 
 res = requests.post(
-    "https://companion-api.napster.com/public/digital-twins",
+    "https://napster-api.napster.com/public/digital-twins",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={
         "firstName": "Sarah",

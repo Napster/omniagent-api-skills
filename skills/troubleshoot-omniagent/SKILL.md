@@ -7,7 +7,7 @@ description: Diagnose and fix problems with the Napster API across every channel
 
 The pitfall index for the Napster API, organized by area. Find the area, scan the symptom-to-fix table, then follow the cross-link to the skill that gets it right the first time.
 
-When this skill and the live docs disagree, **the docs win** — re-check with the docs MCP server (`fetch-page`, `get-api-spec`) and the Swagger at `https://companion-api.napster.com`.
+When this skill and the live docs disagree, **the docs win** — re-check with the docs MCP server (`fetch-page`, `get-api-spec`) and the Swagger at `https://napster-api.napster.com`.
 
 ## Authentication and API keys
 
@@ -168,4 +168,4 @@ Most "silent" failures (denied mic, unbound function, empty transcription) are o
 
 ## When the docs disagree with this skill
 
-This skill is a fast index, not the contract. The authority is the live documentation (docs MCP server: `get-overview`, `list-pages`, `search-docs`, `fetch-page`, `get-api-spec`) and the Swagger at `https://companion-api.napster.com`. If a field name, endpoint, or value here differs from the docs, follow the docs and treat this skill as out of date.
+This skill is a fast index, not the contract. The authority is the live documentation (docs MCP server: `get-overview`, `list-pages`, `search-docs`, `fetch-page`, `get-api-spec`) and the Swagger at `https://napster-api.napster.com`. If a field name, endpoint, or value here differs from the docs, follow the docs and treat this skill as out of date.

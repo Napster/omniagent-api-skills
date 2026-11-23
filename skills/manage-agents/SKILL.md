@@ -10,14 +10,14 @@ Once an agent exists ([[create-agent]]), you list, read, update, and delete it t
 ## List agents
 
 ```bash
-curl https://companion-api.napster.com/public/agents \
+curl https://napster-api.napster.com/public/agents \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
 ## Get one agent
 
 ```bash
-curl https://companion-api.napster.com/public/agents/agent_abc123 \
+curl https://napster-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -26,7 +26,7 @@ curl https://companion-api.napster.com/public/agents/agent_abc123 \
 `PATCH` changes only the fields you include; everything else is untouched. You can update any creation field: `companionId`, `name`, `voiceId`, `language`, `functions`, `mcp`, `faqCollections`, `knowledgeBaseId`, `providerSettings`, `useWebSearch`, `tags`, `disableIdleTimeout`, `mode`. Changes apply to every channel using the agent. `faqCollections` still accepts only one ID.
 
 ```bash
-curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
+curl -X PATCH https://napster-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -36,7 +36,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
 ```
 
 ```ts
-await fetch("https://companion-api.napster.com/public/agents/agent_abc123", {
+await fetch("https://napster-api.napster.com/public/agents/agent_abc123", {
   method: "PATCH",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
   body: JSON.stringify({ language: "es", voiceId: "shimmer" }),
@@ -46,7 +46,7 @@ await fetch("https://companion-api.napster.com/public/agents/agent_abc123", {
 ```python
 import os, requests
 requests.patch(
-    "https://companion-api.napster.com/public/agents/agent_abc123",
+    "https://napster-api.napster.com/public/agents/agent_abc123",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={"language": "es", "voiceId": "shimmer"},
 )
@@ -59,7 +59,7 @@ Updating `functions`, `mcp`, `faqCollections`, or `knowledgeBaseId` replaces the
 ## Delete an agent
 
 ```bash
-curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123 \
+curl -X DELETE https://napster-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -71,11 +71,11 @@ A channel config holds per-channel overrides and (for SIP) human-handoff setting
 
 ```bash
 # Get a channel config (e.g. SIP)
-curl https://companion-api.napster.com/public/agents/agent_abc123/channels/sip \
+curl https://napster-api.napster.com/public/agents/agent_abc123/channels/sip \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 
 # Delete only the channel config (keeps the agent, drops the overrides)
-curl -X DELETE https://companion-api.napster.com/public/agents/agent_abc123/channels/sip \
+curl -X DELETE https://napster-api.napster.com/public/agents/agent_abc123/channels/sip \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 

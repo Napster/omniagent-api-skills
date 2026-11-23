@@ -19,7 +19,7 @@ If you can already open the dashboard, skip to step 1.
 
 The key is created in the dashboard — there is no API to mint one.
 
-1. Open the dashboard at [companion-api.napster.com/admin](https://companion-api.napster.com/admin).
+1. Open the dashboard at [napster-api.napster.com/admin](https://napster-api.napster.com/admin).
 2. **Choose a project**, or create a new one. API keys are **scoped per project** — the key only works for the personas, agents, tools, and knowledge in that project, so pick the project you intend to build in.
 3. In the left nav, go to **Keys**, then click **+ Create API key**.
 4. Fill in the form:
@@ -61,14 +61,14 @@ The cheapest authenticated call is listing the public persona catalog. A `200` m
 
 ```bash
 curl -s -o /dev/null -w "%{http_code}\n" \
-  https://companion-api.napster.com/public/companions/napster-stock?pageSize=1 \
+  https://napster-api.napster.com/public/companions/napster-stock?pageSize=1 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 # 200
 ```
 
 ```ts
 const res = await fetch(
-  "https://companion-api.napster.com/public/companions/napster-stock?pageSize=1",
+  "https://napster-api.napster.com/public/companions/napster-stock?pageSize=1",
   { headers: { "X-Api-Key": process.env.NAPSTER_API_KEY! } },
 );
 console.log(res.status); // 200
@@ -78,7 +78,7 @@ console.log(res.status); // 200
 import os, requests
 
 res = requests.get(
-    "https://companion-api.napster.com/public/companions/napster-stock",
+    "https://napster-api.napster.com/public/companions/napster-stock",
     params={"pageSize": 1},
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
 )

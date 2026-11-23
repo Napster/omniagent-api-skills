@@ -19,7 +19,7 @@ Both attach to an agent by ID ([[create-agent]] / [[manage-agents]]).
 Create the collection with `provider: "azureOpenAI"` — it works with agents on Realtime and Cascade API keys, whichever provider they use.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/knowledge-bases \
+curl -X POST https://napster-api.napster.com/public/knowledge-bases \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "name": "Product Documentation", "provider": "azureOpenAI" }'
@@ -30,7 +30,7 @@ curl -X POST https://companion-api.napster.com/public/knowledge-bases \
 The platform downloads and processes the file. The URL must be publicly reachable.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/knowledge-bases/kb_abc123/files \
+curl -X POST https://napster-api.napster.com/public/knowledge-bases/kb_abc123/files \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "url": "https://example.com/docs/product-guide.pdf" }'
@@ -52,7 +52,7 @@ A collection holds up to **30 files**. When it's full, delete files you no longe
 The platform **automatically generates a summary for each file on upload** — you don't have to set one. The summary helps retrieval pick the right file, so override it only when you want something more specific or accurate than the auto-generated text:
 
 ```bash
-curl -X PATCH https://companion-api.napster.com/public/knowledge-bases/kb_abc123/files/file_abc123/summary \
+curl -X PATCH https://napster-api.napster.com/public/knowledge-bases/kb_abc123/files/file_abc123/summary \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "summary": "Return policy and refund procedures for all regions" }'
@@ -67,7 +67,7 @@ A session uses exactly **one** knowledge collection. To draw on several sources,
 Create a collection and seed it with pairs in one call (the `faqs` array is optional — you can add pairs later). A collection holds up to **50 Q&A pairs**, and an agent uses **one** collection, so this is the agent's full FAQ budget:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/faqs \
+curl -X POST https://napster-api.napster.com/public/faqs \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -82,7 +82,7 @@ curl -X POST https://companion-api.napster.com/public/faqs \
 Add a pair to an existing collection:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/faqs/faq_abc123/items \
+curl -X POST https://napster-api.napster.com/public/faqs/faq_abc123/items \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "question": "Do you ship internationally?", "answer": "Yes, to over 40 countries." }'
@@ -90,7 +90,7 @@ curl -X POST https://companion-api.napster.com/public/faqs/faq_abc123/items \
 
 ```ts
 // Create an FAQ collection with seed pairs
-const res = await fetch("https://companion-api.napster.com/public/faqs", {
+const res = await fetch("https://napster-api.napster.com/public/faqs", {
   method: "POST",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -104,7 +104,7 @@ console.log((await res.json()).id); // faq_…
 ```python
 import os, requests
 res = requests.post(
-    "https://companion-api.napster.com/public/faqs",
+    "https://napster-api.napster.com/public/faqs",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={"name": "Return Policy",
           "faqs": [{"question": "What is your return policy?", "answer": "Return within 30 days."}]},
@@ -117,7 +117,7 @@ print(res.json()["id"])  # faq_…
 Pass the IDs when creating or updating the agent ([[create-agent]]):
 
 ```bash
-curl -X PATCH https://companion-api.napster.com/public/agents/agent_abc123 \
+curl -X PATCH https://napster-api.napster.com/public/agents/agent_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "knowledgeBaseId": "kb_abc123", "faqCollections": ["faq_abc123"] }'
