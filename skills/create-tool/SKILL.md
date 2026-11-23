@@ -104,7 +104,7 @@ Need a tool for one session only? Register it mid-session with `set_settings` â†
 | `data.name` | Yes | Function name the model calls. snake_case. |
 | `data.description` | Yes | What the tool does. The model reads this to decide relevance. |
 | `data.parameters` | Yes | JSON Schema for the arguments (`type`, `properties`, `required`). |
-| `flow` | Yes | `implicit` or `explicit`. |
+| `flow` | No | `implicit` or `explicit`. Defaults to `implicit`. |
 | `url` | explicit only | HTTP or WebSocket endpoint that receives the call. |
 | `headers` | No | Custom headers sent with explicit calls (auth, routing). |
 | `receiveMessages` | No | WebSocket explicit tools only â€” stream the live conversation to your endpoint. |
