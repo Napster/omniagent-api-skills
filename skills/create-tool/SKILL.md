@@ -23,7 +23,7 @@ You can mix both in one session.
 Explicit (server-side) example:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/functions \
+curl -X POST https://napster-api.napster.com/public/functions \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -46,7 +46,7 @@ curl -X POST https://companion-api.napster.com/public/functions \
 ```
 
 ```ts
-const res = await fetch("https://companion-api.napster.com/public/functions", {
+const res = await fetch("https://napster-api.napster.com/public/functions", {
   method: "POST",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -72,7 +72,7 @@ console.log(tool.id); // fn_…
 import os, requests
 
 res = requests.post(
-    "https://companion-api.napster.com/public/functions",
+    "https://napster-api.napster.com/public/functions",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={
         "data": {
@@ -194,11 +194,11 @@ instance.sendCommand({
 ## Managing tools
 
 ```bash
-curl https://companion-api.napster.com/public/functions -H "X-Api-Key: $NAPSTER_API_KEY"            # list
-curl https://companion-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"  # get
-curl -X PUT https://companion-api.napster.com/public/functions/fn_abc123 \
+curl https://napster-api.napster.com/public/functions -H "X-Api-Key: $NAPSTER_API_KEY"            # list
+curl https://napster-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"  # get
+curl -X PUT https://napster-api.napster.com/public/functions/fn_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" -d '{ … }'                    # update
-curl -X DELETE https://companion-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"
+curl -X DELETE https://napster-api.napster.com/public/functions/fn_abc123 -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
 ## Common errors

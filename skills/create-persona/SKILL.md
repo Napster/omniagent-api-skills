@@ -16,7 +16,7 @@ You get a persona two ways: pick one from Napster's catalog (ready immediately),
 Catalog personas have ready-made avatars and personalities and can be used the moment you create an agent.
 
 ```bash
-curl "https://companion-api.napster.com/public/companions/napster-stock?pageSize=10" \
+curl "https://napster-api.napster.com/public/companions/napster-stock?pageSize=10" \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -27,7 +27,7 @@ Filter with `search`, `gender`, `ethnicity`, and paginate with `pageIndex` / `pa
 Use this when the catalog doesn't fit. The `description` is the most important field — it becomes the foundation of the agent's system prompt.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/companions \
+curl -X POST https://napster-api.napster.com/public/companions \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -41,7 +41,7 @@ curl -X POST https://companion-api.napster.com/public/companions \
 ```
 
 ```ts
-const res = await fetch("https://companion-api.napster.com/public/companions", {
+const res = await fetch("https://napster-api.napster.com/public/companions", {
   method: "POST",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -61,7 +61,7 @@ console.log(persona.id); // comp_…
 import os, requests
 
 res = requests.post(
-    "https://companion-api.napster.com/public/companions",
+    "https://napster-api.napster.com/public/companions",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={
         "firstName": "Alex",
@@ -113,7 +113,7 @@ When you do provide it, `pictureUrl` must be **publicly reachable over HTTPS** �
 To get valid `ethnicity` values:
 
 ```bash
-curl https://companion-api.napster.com/public/companions/ethnicities \
+curl https://napster-api.napster.com/public/companions/ethnicities \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -122,7 +122,7 @@ curl https://companion-api.napster.com/public/companions/ethnicities \
 A custom persona's avatar is generated asynchronously. Fetch the persona and watch its status:
 
 ```bash
-curl https://companion-api.napster.com/public/companions/comp_abc123 \
+curl https://napster-api.napster.com/public/companions/comp_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -137,7 +137,7 @@ Poll until `readyToUse` if you only need to use the persona, or until `completed
 
 ```bash
 while :; do
-  s=$(curl -s https://companion-api.napster.com/public/companions/comp_abc123 \
+  s=$(curl -s https://napster-api.napster.com/public/companions/comp_abc123 \
         -H "X-Api-Key: $NAPSTER_API_KEY" | python3 -c "import sys,json;print(json.load(sys.stdin).get('status',''))")
   echo "status: $s"; [ "$s" = "completed" ] && break; sleep 20
 done

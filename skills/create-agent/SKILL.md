@@ -20,7 +20,7 @@ Creating the agent does not make it reachable. End users reach it only after you
 ## Create the agent
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/agents \
+curl -X POST https://napster-api.napster.com/public/agents \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -40,7 +40,7 @@ curl -X POST https://companion-api.napster.com/public/agents \
 ```
 
 ```ts
-const res = await fetch("https://companion-api.napster.com/public/agents", {
+const res = await fetch("https://napster-api.napster.com/public/agents", {
   method: "POST",
   headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -62,7 +62,7 @@ console.log(agent.id); // agent_…
 import os, requests
 
 res = requests.post(
-    "https://companion-api.napster.com/public/agents",
+    "https://napster-api.napster.com/public/agents",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={
         "companionId": "comp_abc123",

@@ -29,7 +29,7 @@ The browser must never hold the API key. A server-side endpoint calls the API an
 // Example: an endpoint in the developer's own backend (Express shown).
 app.post("/api/token", async (req, res) => {
   const r = await fetch(
-    `https://companion-api.napster.com/public/agents/${process.env.AGENT_ID}/connections`,
+    `https://napster-api.napster.com/public/agents/${process.env.AGENT_ID}/connections`,
     {
       method: "POST",
       headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
@@ -47,7 +47,7 @@ app.post("/api/token", async (req, res) => {
 @app.post("/api/token")
 async def token():
     r = requests.post(
-        f"https://companion-api.napster.com/public/agents/{os.environ['AGENT_ID']}/connections",
+        f"https://napster-api.napster.com/public/agents/{os.environ['AGENT_ID']}/connections",
         headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
         json={"channelType": "webrtc"},
     )
@@ -283,7 +283,7 @@ The full treatment — when the wrap happens, break-out rules and `exclude`, rou
 By default (`videoPolicy: "required"`) the session becomes ready only when audio and video are both up — one `avatar_state_changed: ready`. Set `"deferred"` on the WebRTC channel config to let the conversation start on audio first, with the video avatar coming up moments later:
 
 ```bash
-curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/webrtc \
+curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/webrtc \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "videoPolicy": "deferred" }'
@@ -300,7 +300,7 @@ If you do, set it in **two places** — server-side and SDK-side — and they ha
 **Server side — WebRTC channel config.** Tell the server to emit a chroma-keyed (green) stream:
 
 ```bash
-curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/webrtc \
+curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/webrtc \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "useGreenVideo": true }'

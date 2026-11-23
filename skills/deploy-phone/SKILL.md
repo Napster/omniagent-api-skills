@@ -30,7 +30,7 @@ Two things apply to both paths:
 `PUT` the `voip` channel config on the agent. The body is optional — include it only to override the agent's defaults on calls; otherwise an empty body is fine.
 
 ```bash
-curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/voip \
+curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/voip \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -53,7 +53,7 @@ The response is the channel config, including the provisioned **`voipEndpoint`**
 
 ```ts
 const res = await fetch(
-  "https://companion-api.napster.com/public/agents/agent_abc123/channels/voip",
+  "https://napster-api.napster.com/public/agents/agent_abc123/channels/voip",
   {
     method: "PUT",
     headers: { "X-Api-Key": process.env.NAPSTER_API_KEY!, "Content-Type": "application/json" },
@@ -66,7 +66,7 @@ const { voipEndpoint } = await res.json();
 ```python
 import os, requests
 res = requests.put(
-    "https://companion-api.napster.com/public/agents/agent_abc123/channels/voip",
+    "https://napster-api.napster.com/public/agents/agent_abc123/channels/voip",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     json={},
 )
@@ -104,7 +104,7 @@ Use this when you already run a SIP trunk. You manage three resources: the **age
 SIP connections require dedicated capacity and the default quota is **0** — creating a connection with no quota fails. Request capacity first and wait for approval:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/quota-requests \
+curl -X POST https://napster-api.napster.com/public/quota-requests \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -119,7 +119,7 @@ curl -X POST https://companion-api.napster.com/public/quota-requests \
 Required even without human handoff — it registers the SIP channel for the agent. `PUT` creates or updates it.
 
 ```bash
-curl -X PUT https://companion-api.napster.com/public/agents/agent_abc123/channels/sip \
+curl -X PUT https://napster-api.napster.com/public/agents/agent_abc123/channels/sip \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -137,7 +137,7 @@ Same optional overrides as VoIP (`functions`, `faqCollections` — at most one I
 Provide the SIP credentials from your provider. This deploys a listener that registers with your SIP server and starts accepting calls.
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/sip-connections \
+curl -X POST https://napster-api.napster.com/public/sip-connections \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -171,7 +171,7 @@ curl -X POST https://companion-api.napster.com/public/sip-connections \
 Two independent states, both must be healthy:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_abc123/status \
+curl -X POST https://napster-api.napster.com/public/sip-connections/sipconn_abc123/status \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -181,7 +181,7 @@ curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_ab
 When `lifecycleStatus` is `Running` and `sipStatus` is `online`, calls to your number are answered. If it stays on `registering`, pull the error log:
 
 ```bash
-curl https://companion-api.napster.com/public/sip-connections/sipconn_abc123/errors \
+curl https://napster-api.napster.com/public/sip-connections/sipconn_abc123/errors \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 # [{ "timestamp": "...", "message": "SIP registration failed: 401 Unauthorized", "code": 401 }]
 ```
@@ -191,7 +191,7 @@ curl https://companion-api.napster.com/public/sip-connections/sipconn_abc123/err
 Once a SIP connection is registered (`sipStatus: online`), the agent can dial out:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_abc123/call \
+curl -X POST https://napster-api.napster.com/public/sip-connections/sipconn_abc123/call \
   -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" \
   -d '{ "destination": "15551234567", "initialSpeech": "Hi, this is Ava from Acme — calling about your order." }'
 # { "status": "dialing" }
@@ -202,10 +202,10 @@ curl -X POST https://companion-api.napster.com/public/sip-connections/sipconn_ab
 ### Managing SIP connections
 
 ```bash
-curl https://companion-api.napster.com/public/sip-connections -H "X-Api-Key: $NAPSTER_API_KEY"          # list
-curl -X PATCH https://companion-api.napster.com/public/sip-connections/sipconn_abc123 \
+curl https://napster-api.napster.com/public/sip-connections -H "X-Api-Key: $NAPSTER_API_KEY"          # list
+curl -X PATCH https://napster-api.napster.com/public/sip-connections/sipconn_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY" -H "Content-Type: application/json" -d '{ "name": "Renamed" }'
-curl -X DELETE https://companion-api.napster.com/public/sip-connections/sipconn_abc123 \
+curl -X DELETE https://napster-api.napster.com/public/sip-connections/sipconn_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"   # stops the listener and unregisters
 ```
 

@@ -14,7 +14,7 @@ When you create a connection ([[deploy-webrtc]] / [[deploy-websocket]]), the res
 ## List sessions
 
 ```bash
-curl "https://companion-api.napster.com/public/sessions?pageSize=10" \
+curl "https://napster-api.napster.com/public/sessions?pageSize=10" \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -38,13 +38,13 @@ Each item includes `id`, `companionId` (+ `companion`), `functions`, `knowledgeB
 Combine parameters to narrow the results, for example `sessionType=sip&from=2026-11-01T00:00:00Z&to=2026-11-30T23:59:59Z` for November's SIP calls.
 
 ```bash
-curl "https://companion-api.napster.com/public/sessions?companionId=comp_abc123&pageSize=20" \
+curl "https://napster-api.napster.com/public/sessions?companionId=comp_abc123&pageSize=20" \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
 ```ts
 const res = await fetch(
-  "https://companion-api.napster.com/public/sessions?" +
+  "https://napster-api.napster.com/public/sessions?" +
     new URLSearchParams({ externalClientId: "user_12345", pageSize: "20" }),
   { headers: { "X-Api-Key": process.env.NAPSTER_API_KEY! } },
 );
@@ -54,7 +54,7 @@ const { items, totalCount } = await res.json();
 ```python
 import os, requests
 res = requests.get(
-    "https://companion-api.napster.com/public/sessions",
+    "https://napster-api.napster.com/public/sessions",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
     params={"externalClientId": "user_12345", "pageSize": 20},
 )
@@ -64,7 +64,7 @@ print(res.json()["totalCount"])
 ## Get a session with its transcript
 
 ```bash
-curl https://companion-api.napster.com/public/sessions/sess_abc123 \
+curl https://napster-api.napster.com/public/sessions/sess_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
@@ -90,7 +90,7 @@ Adds `conversation.items` — each message in chronological order with `role` (`
 ```python
 import os, requests
 s = requests.get(
-    "https://companion-api.napster.com/public/sessions/sess_abc123",
+    "https://napster-api.napster.com/public/sessions/sess_abc123",
     headers={"X-Api-Key": os.environ["NAPSTER_API_KEY"]},
 ).json()
 for m in s.get("conversation", {}).get("items", []):
@@ -152,7 +152,7 @@ Items are saved when the session closes, so a running session returns an empty l
 ## Delete a session
 
 ```bash
-curl -X DELETE https://companion-api.napster.com/public/sessions/sess_abc123 \
+curl -X DELETE https://napster-api.napster.com/public/sessions/sess_abc123 \
   -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 

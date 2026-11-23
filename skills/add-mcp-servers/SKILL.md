@@ -36,7 +36,7 @@ What the server requires decides how you register it. The server's own docs say 
 ## Step 2 — register the server
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/mcp-servers \
+curl -X POST https://napster-api.napster.com/public/mcp-servers \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -67,7 +67,7 @@ Set `allowedTools` deliberately on any third-party server. It is the only limit 
 ## Step 3 — attach it to the agent
 
 ```bash
-curl -X PATCH https://companion-api.napster.com/public/agents/$AGENT_ID \
+curl -X PATCH https://napster-api.napster.com/public/agents/$AGENT_ID \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "mcp": { "servers": ["inventory"] } }'
@@ -84,7 +84,7 @@ When the data belongs to the end user, not to you.
 **Connectors** are MCP servers the platform maintains — nothing to register. Attach by ID: `dropbox`, `gmail`, `googlecalendar`, `googledrive`, `microsoftteams`, `outlookcalendar`, `outlookemail`, `sharepoint`.
 
 ```bash
-curl -X PATCH https://companion-api.napster.com/public/agents/$AGENT_ID \
+curl -X PATCH https://napster-api.napster.com/public/agents/$AGENT_ID \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{ "mcp": { "servers": ["inventory"], "connectors": ["googlecalendar"] } }'
@@ -93,7 +93,7 @@ curl -X PATCH https://companion-api.napster.com/public/agents/$AGENT_ID \
 Then pass that user's OAuth token when opening the session:
 
 ```bash
-curl -X POST https://companion-api.napster.com/public/agents/$AGENT_ID/connections \
+curl -X POST https://napster-api.napster.com/public/agents/$AGENT_ID/connections \
   -H "X-Api-Key: $NAPSTER_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -161,9 +161,9 @@ Two more event types report activity. `mcp_tools` lists each server's tools at s
 ## Managing servers
 
 ```bash
-curl "https://companion-api.napster.com/public/mcp-servers?search=inventory" -H "X-Api-Key: $NAPSTER_API_KEY"
-curl https://companion-api.napster.com/public/mcp-servers/inventory -H "X-Api-Key: $NAPSTER_API_KEY"
-curl -X DELETE https://companion-api.napster.com/public/mcp-servers/inventory -H "X-Api-Key: $NAPSTER_API_KEY"
+curl "https://napster-api.napster.com/public/mcp-servers?search=inventory" -H "X-Api-Key: $NAPSTER_API_KEY"
+curl https://napster-api.napster.com/public/mcp-servers/inventory -H "X-Api-Key: $NAPSTER_API_KEY"
+curl -X DELETE https://napster-api.napster.com/public/mcp-servers/inventory -H "X-Api-Key: $NAPSTER_API_KEY"
 ```
 
 Updates use `PUT` and **replace the whole server** — omitted fields revert to defaults (`requireApproval` → `never`, `headers` cleared). Read it first, change what you need, send the whole object back.
